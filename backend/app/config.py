@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,9 +15,10 @@ class Settings(BaseSettings):
     enable_local_models: bool = True
     cors_origins: str = "http://localhost:3000"
 
-    llm_api_base: str | None = None
-    llm_api_key: str | None = None
-    llm_model: str | None = None
+    # These aliases intentionally accept provider-standard environment names.
+    llm_api_base: str | None = Field(default=None, validation_alias="LLM_API_BASE")
+    llm_api_key: str | None = Field(default=None, validation_alias="LLM_API_KEY")
+    llm_model: str | None = Field(default=None, validation_alias="LLM_MODEL")
 
     retrieval_bm25_weight: float = 0.45
     retrieval_dense_weight: float = 0.55
