@@ -46,6 +46,7 @@ def load_controlled_cases() -> list[dict]:
 
 def _documents_for_case(case: dict, ratio: float) -> list[DocumentCreate]:
     ratio = max(0.0, min(0.9, ratio))
+    # 20 makes 0/10/25/50/75% conditions exact.
     total = 20
     conflict_count = int(round(total * ratio))
     clean_count = total - conflict_count
@@ -57,7 +58,7 @@ def _documents_for_case(case: dict, ratio: float) -> list[DocumentCreate]:
             DocumentCreate(
                 title=f'{case["id"]} clean source {index + 1}',
                 text=f'{context} {case["clean_fact"]}',
-                source_reliability=max(0.72, 0.94 - index * 0.015),
+                source_reliability=max(0.72, 0.94 - index * 0.01),
                 tags=["benchmark", "clean"],
             )
         )
@@ -68,7 +69,7 @@ def _documents_for_case(case: dict, ratio: float) -> list[DocumentCreate]:
             DocumentCreate(
                 title=f'{case["id"]} conflict source {index + 1}',
                 text=f'{context} {case["conflict_fact"]}',
-                source_reliability=max(0.52, 0.70 - index * 0.015),
+                source_reliability=max(0.52, 0.70 - index * 0.01),
                 tags=["benchmark", "conflict"],
             )
         )
@@ -82,8 +83,14 @@ async def run_controlled_benchmark(
     conflict_ratios: list[float],
     use_nli: bool,
     use_local_models: bool,
+    case_ids: set[str] | None = None,
 ) -> tuple[BenchmarkResponse, list[RunRecord]]:
-    cases = load_controlled_cases()
+    all_cases = load_controlled_cases()
+    cases = (
+        [case for case in all_cases if case["id"] in case_ids]
+        if case_ids is not None
+        else all_cases
+    )
     records: list[RunRecord] = []
 
     for mode in modes:
@@ -182,14 +189,14 @@ async def run_controlled_benchmark(
 
     return (
         BenchmarkResponse(
-            benchmark="controlled-conflicts-v1",
+            benchmark="controlled-conflicts-v2",
             cases=len(cases),
             rows=rows,
             notes=[
-                "This controlled benchmark is synthetic and intended for repeatable ablation testing.",
+                "Synthetic suite with exact conflict ratios and held-out case support.",
                 "Accuracy uses required answer-keyword matching, not an LLM judge.",
                 "Conflict F1 is query-level conflict-presence detection.",
-                "Use public benchmark adapters for final external-validity claims.",
+                "Use RAMDocs results separately for external validity.",
             ],
         ),
         records,

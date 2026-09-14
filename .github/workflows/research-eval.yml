@@ -1,0 +1,67 @@
+name: Frozen Research Evaluation
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/app/research/**"
+      - "backend/scripts/run_frozen_suite.py"
+      - ".github/workflows/research-eval.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  frozen-fallback-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install evaluation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install             "pydantic>=2.8,<3"             "pydantic-settings>=2.4,<3"             "numpy>=1.26,<3"             "scikit-learn>=1.5,<2"             "rank-bm25>=0.2.2,<1"             "httpx>=0.27,<1"             "matplotlib>=3.9,<4"
+
+      - name: Fetch official RAMDocs test set
+        run: |
+          curl --fail --location             https://raw.githubusercontent.com/HanNight/RAMDocs/main/RAMDocs_test.jsonl             --output RAMDocs_test.jsonl
+          test -s RAMDocs_test.jsonl
+          sha256sum RAMDocs_test.jsonl | tee RAMDocs_test.sha256
+
+      - name: Run frozen evaluation suite
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+          EVIDENCEGUARD_ENABLE_LOCAL_MODELS: "false"
+        run: |
+          python scripts/run_frozen_suite.py             --ramdocs ../RAMDocs_test.jsonl             --output ../research/results/frozen
+
+      - name: Record dataset provenance
+        run: |
+          cp RAMDocs_test.sha256 research/results/frozen/RAMDOCS_SOURCE.sha256
+          cat > research/results/frozen/RAMDOCS_SOURCE.txt <<'EOF'
+          Dataset: RAMDocs_test.jsonl
+          Source repository: https://github.com/HanNight/RAMDocs
+          Raw source: https://raw.githubusercontent.com/HanNight/RAMDocs/main/RAMDocs_test.jsonl
+          Evaluation labels are not used as EvidenceGuard inference inputs.
+          EOF
+
+      - name: Commit reproducible results
+        run: |
+          git config user.name "EvidenceGuard Research Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f research/results/frozen
+          if git diff --cached --quiet; then
+            echo "No result changes to commit."
+            exit 0
+          fi
+          git commit -m "research: update frozen evaluation results"
+          git push
