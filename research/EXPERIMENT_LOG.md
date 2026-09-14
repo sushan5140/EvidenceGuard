@@ -66,23 +66,45 @@ The full all-pair evaluation also took about 26 minutes versus about 15 minutes 
 
 Decision: reject the all-pair NLI change and close its draft PR. Higher recall alone is not useful when precision, conflict F1, answer accuracy, wrong-answer rate, and compute cost all move in the wrong direction.
 
+## Finding 5 — independent-document QA aggregation increases answer coverage but also misinformation
+
+The `experiment/qa-aggregation` branch applied `deepset/minilm-uncased-squad2` independently to retrieved documents and aggregated extracted answer candidates.
+
+The 500-case exploratory run increased strict accuracy from the canonical 14.8% to 23.8% and all-gold hit rate from 17.8% to 39.8%, but known wrong-answer rate rose from 19.6% to 39.4%. Because that comparison did not share the exact same per-example inference path, a paired 100-case check was run next.
+
+In the paired 100-case check, both systems shared the same retrieved/NLI evidence before answer assembly:
+
+| Metric | Conflict-aware | QA aggregation | Delta |
+|---|---:|---:|---:|
+| Strict accuracy | 45.0% | 34.0% | -11.0 pp |
+| All-gold hit rate | 57.0% | 67.0% | +10.0 pp |
+| Wrong-answer rate | 33.0% | 46.0% | +13.0 pp |
+
+Paired outcomes: 10 strict improvements, 21 strict regressions, 11 wrong answers avoided, and 24 new wrong answers introduced.
+
+Decision: reject direct independent-document QA aggregation as a final answer strategy. It recovers more possible answers, but without a verifier it amplifies misinformation faster than it improves strict correctness.
+
 ## Active experiments
 
 ### all-pair NLI conflict discovery — rejected
 
 Branch: `experiment/all-pair-nli`. Draft PR closed after the full RAMDocs experiment. See Finding 4.
 
-### independent-document QA aggregation
+### independent-document QA aggregation — rejected
 
-Branch: `experiment/qa-aggregation`.
+Branches: `experiment/qa-aggregation` and `experiment/qa-aggregation-quick`. See Finding 5.
 
-Hypothesis: independently extracting answer spans from multiple retrieved documents and aggregating repeated candidates can recover additional legitimate disambiguated answers that are currently present in evidence but omitted from the final extractive response.
+### ambiguity-preserving answer clusters — running
+
+Branch: `experiment/ambiguity-clusters`. Draft PR #2.
+
+Hypothesis: group strongly supporting claims into answer clusters, rank clusters by accumulated evidence mass, and emit one representative per strongest cluster. This preserves multiple legitimate ambiguous answers without automatically treating every contradiction as false or blindly aggregating every document-level QA span.
 
 Acceptance criteria:
 
 - improve strict and/or all-gold accuracy over canonical `conflict_aware`,
 - avoid a material increase in known wrong-answer rate,
-- keep inference cost reasonable enough for a final-year prototype.
+- keep the selector label-free at inference time.
 
 ## Reporting rules
 
