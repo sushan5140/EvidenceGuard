@@ -1,0 +1,30 @@
+from app.research.metrics import (
+    binary_metrics,
+    coverage,
+    expected_calibration_error,
+    keyword_answer_correct,
+    selective_accuracy,
+)
+
+
+def test_binary_metrics_perfect():
+    metrics = binary_metrics([True, False, True], [True, False, True])
+    assert metrics.precision == 1.0
+    assert metrics.recall == 1.0
+    assert metrics.f1 == 1.0
+
+
+def test_calibration_error_zero_for_perfect_extremes():
+    assert expected_calibration_error([True, False], [1.0, 0.0], bins=2) == 0.0
+
+
+def test_keyword_accuracy_and_selective_metrics():
+    assert keyword_answer_correct(
+        "Python was created by Guido van Rossum [1].",
+        ["Guido", "van", "Rossum"],
+        abstained=False,
+    )
+    correctness = [True, False, False]
+    abstained = [False, True, False]
+    assert selective_accuracy(correctness, abstained) == 0.5
+    assert round(coverage(abstained), 4) == 0.6667

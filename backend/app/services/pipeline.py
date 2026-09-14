@@ -4,7 +4,7 @@ import hashlib
 import re
 
 from app.config import Settings
-from app.schemas import ConflictEdge, EvidenceItem, QueryResponse
+from app.schemas import ConflictEdge, EvidenceItem, QueryResponse, ResearchMode
 from app.services.chunking import extract_claims
 from app.services.generator import AnswerGenerator
 from app.services.nli import NLIEngine
@@ -81,7 +81,6 @@ class EvidenceGuardPipeline:
                     }
                 )
 
-        # Deduplicate repeated claims caused by overlapping chunks.
         unique: dict[str, dict] = {}
         for item in candidates:
             old = unique.get(item["id"])
@@ -95,7 +94,6 @@ class EvidenceGuardPipeline:
             for right in claims[i + 1 :]:
                 if left["document_id"] == right["document_id"]:
                     continue
-                # Skip obviously unrelated pairs to reduce NLI work.
                 overlap = _question_overlap(left["claim"], right["claim"])
                 reverse_overlap = _question_overlap(right["claim"], left["claim"])
                 if max(overlap, reverse_overlap) < 0.18:
@@ -122,24 +120,38 @@ class EvidenceGuardPipeline:
         top_k: int = 8,
         abstain_threshold: float | None = None,
         use_nli: bool = True,
+        mode: ResearchMode = "evidenceguard",
     ) -> QueryResponse:
         documents = self.store.list()
-        retrieved = self.retriever.retrieve(question, documents, top_k=top_k)
+        strategy = "bm25" if mode == "basic_rag" else "hybrid"
+        retrieved = self.retriever.retrieve(
+            question,
+            documents,
+            top_k=top_k,
+            strategy=strategy,
+        )
         claims = self._claims(question, retrieved)
-        graph = self._graph(claims, use_nli=use_nli)
 
+        conflict_enabled = mode in {"conflict_aware", "evidenceguard"}
+        graph = self._graph(claims, use_nli=use_nli) if conflict_enabled else []
         agreements = agreement_scores([item["id"] for item in claims], graph)
+
         evidence: list[EvidenceItem] = []
         for item in claims:
-            agreement = agreements.get(item["id"], 0.5)
-            score = evidence_score(
-                item["retrieval_score"],
-                item["source_reliability"],
-                agreement,
-                retrieval_weight=self.settings.evidence_retrieval_weight,
-                reliability_weight=self.settings.evidence_reliability_weight,
-                agreement_weight=self.settings.evidence_agreement_weight,
-            )
+            if conflict_enabled:
+                agreement = agreements.get(item["id"], 0.5)
+                score = evidence_score(
+                    item["retrieval_score"],
+                    item["source_reliability"],
+                    agreement,
+                    retrieval_weight=self.settings.evidence_retrieval_weight,
+                    reliability_weight=self.settings.evidence_reliability_weight,
+                    agreement_weight=self.settings.evidence_agreement_weight,
+                )
+            else:
+                agreement = 0.5
+                score = item["retrieval_score"]
+
             evidence.append(
                 EvidenceItem(
                     **item,
@@ -149,18 +161,29 @@ class EvidenceGuardPipeline:
             )
 
         evidence.sort(key=lambda item: item.evidence_score, reverse=True)
-        c_rate = conflict_rate(graph)
-        confidence = answer_confidence(
-            [item.evidence_score for item in evidence],
-            c_rate,
-        )
+        c_rate = conflict_rate(graph) if conflict_enabled else 0.0
+
+        if conflict_enabled:
+            confidence = answer_confidence(
+                [item.evidence_score for item in evidence],
+                c_rate,
+            )
+        else:
+            confidence = (
+                sum(item.evidence_score for item in evidence[:4])
+                / max(1, min(4, len(evidence)))
+                if evidence
+                else 0.0
+            )
+
         threshold = (
             abstain_threshold
             if abstain_threshold is not None
             else self.settings.default_abstain_threshold
         )
+        abstention_enabled = mode == "evidenceguard"
+        abstained = (confidence < threshold or not evidence) if abstention_enabled else not evidence
 
-        abstained = confidence < threshold or not evidence
         if abstained:
             answer = (
                 "EvidenceGuard abstained: the retrieved evidence is too weak or "
@@ -185,13 +208,15 @@ class EvidenceGuardPipeline:
             evidence=evidence,
             graph=graph,
             generator=generator,
+            mode=mode,
             model_status={
                 "retrieval": self.retriever.engine_status,
-                "nli": self.nli.status,
+                "nli": self.nli.status if conflict_enabled else "disabled-by-baseline",
                 "generation": (
                     f"llm:{self.settings.llm_model}"
                     if self.generator.configured
                     else "extractive-fallback"
                 ),
+                "research_mode": mode,
             },
         )

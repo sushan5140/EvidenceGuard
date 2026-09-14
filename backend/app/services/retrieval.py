@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 
@@ -11,6 +12,7 @@ from app.services.chunking import Chunk, chunk_text
 
 
 _TOKEN = re.compile(r"[A-Za-z0-9']+")
+RetrievalStrategy = Literal["bm25", "dense", "hybrid"]
 
 
 @dataclass(slots=True)
@@ -81,7 +83,6 @@ class HybridRetriever:
             model = BM25Okapi(corpus)
             return np.asarray(model.get_scores(_tokens(question)), dtype=float)
         except Exception:
-            # Lightweight lexical fallback: normalized term overlap.
             q = set(_tokens(question))
             scores = []
             for chunk in chunks:
@@ -134,6 +135,7 @@ class HybridRetriever:
         documents: list[DocumentRecord],
         *,
         top_k: int = 8,
+        strategy: RetrievalStrategy = "hybrid",
     ) -> list[RetrievedChunk]:
         chunks = self._chunks(documents)
         if not chunks:
@@ -142,9 +144,16 @@ class HybridRetriever:
 
         bm25 = _minmax(self._bm25(question, chunks))
         dense = _minmax(self._dense(question, chunks))
-        combined = self.bm25_weight * bm25 + self.dense_weight * dense
-        order = np.argsort(combined)[::-1][:top_k]
 
+        if strategy == "bm25":
+            combined = bm25
+            self.engine_status = f"bm25|{self.engine_status}"
+        elif strategy == "dense":
+            combined = dense
+        else:
+            combined = self.bm25_weight * bm25 + self.dense_weight * dense
+
+        order = np.argsort(combined)[::-1][:top_k]
         return [
             RetrievedChunk(
                 id=f"{chunks[i].document_id}:{chunks[i].index}",

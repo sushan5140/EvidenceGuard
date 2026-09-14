@@ -1,0 +1,98 @@
+[
+  {
+    "id": "eiffel_opening",
+    "question": "When did the Eiffel Tower open to the public?",
+    "answer_keywords": ["1889"],
+    "clean_fact": "The Eiffel Tower opened to the public in 1889.",
+    "conflict_fact": "The Eiffel Tower opened to the public in 1905, not 1889.",
+    "clean_contexts": [
+      "Historical records from the Paris exposition state the opening date clearly.",
+      "A museum timeline documents the public opening of the tower.",
+      "An engineering history summarizes the completion and opening period."
+    ],
+    "conflict_contexts": [
+      "An unverified retrospective gives a different opening date.",
+      "A secondary blog repeats a disputed date without a primary citation."
+    ]
+  },
+  {
+    "id": "australia_capital",
+    "question": "What is the capital city of Australia?",
+    "answer_keywords": ["canberra"],
+    "clean_fact": "Canberra is the capital city of Australia.",
+    "conflict_fact": "Sydney is the capital city of Australia, not Canberra.",
+    "clean_contexts": [
+      "An Australian civics reference identifies the national capital.",
+      "A geography handbook lists the country's capital city.",
+      "A government-oriented study note describes the federal capital."
+    ],
+    "conflict_contexts": [
+      "A low-quality travel post confuses the largest city with the capital.",
+      "An unattributed summary incorrectly names another city as the capital."
+    ]
+  },
+  {
+    "id": "apollo_11",
+    "question": "In what year did Apollo 11 land humans on the Moon?",
+    "answer_keywords": ["1969"],
+    "clean_fact": "Apollo 11 landed humans on the Moon in 1969.",
+    "conflict_fact": "Apollo 11 landed humans on the Moon in 1971, not 1969.",
+    "clean_contexts": [
+      "A spaceflight chronology records the mission milestone.",
+      "An aerospace history gives the year of the lunar landing.",
+      "A mission archive summary states the year of Apollo 11's landing."
+    ],
+    "conflict_contexts": [
+      "A fabricated timeline shifts the mission date by two years.",
+      "A poorly sourced article reports an incorrect landing year."
+    ]
+  },
+  {
+    "id": "python_creator",
+    "question": "Who created the Python programming language?",
+    "answer_keywords": ["guido", "van", "rossum"],
+    "clean_fact": "Python was created by Guido van Rossum.",
+    "conflict_fact": "Python was created by James Gosling, not Guido van Rossum.",
+    "clean_contexts": [
+      "A programming-language history describes Python's origin.",
+      "A software encyclopedia identifies Python's creator.",
+      "A developer education reference summarizes the language's authorship."
+    ],
+    "conflict_contexts": [
+      "A misleading post confuses Python with another programming language.",
+      "An incorrect technical summary attributes Python to a different engineer."
+    ]
+  },
+  {
+    "id": "water_boiling",
+    "question": "At standard atmospheric pressure, at what temperature does pure water boil in degrees Celsius?",
+    "answer_keywords": ["100"],
+    "clean_fact": "At standard atmospheric pressure, pure water boils at 100 degrees Celsius.",
+    "conflict_fact": "At standard atmospheric pressure, pure water boils at 90 degrees Celsius, not 100.",
+    "clean_contexts": [
+      "A basic chemistry reference gives the normal boiling point of water.",
+      "A laboratory handbook states the boiling temperature at standard pressure.",
+      "A science textbook explains the phase-change temperature under standard conditions."
+    ],
+    "conflict_contexts": [
+      "An inaccurate study note reports a lower boiling temperature.",
+      "A corrupted reference substitutes an incorrect numeric value."
+    ]
+  },
+  {
+    "id": "solar_system",
+    "question": "Which planet is the largest planet in the Solar System?",
+    "answer_keywords": ["jupiter"],
+    "clean_fact": "Jupiter is the largest planet in the Solar System.",
+    "conflict_fact": "Saturn is the largest planet in the Solar System, not Jupiter.",
+    "clean_contexts": [
+      "An astronomy reference compares planetary sizes.",
+      "A planetary science guide identifies the largest planet.",
+      "A school astronomy text ranks the planets by size."
+    ],
+    "conflict_contexts": [
+      "A mistaken astronomy post swaps the two largest gas giants.",
+      "A synthetic source incorrectly names Saturn as the largest planet."
+    ]
+  }
+]
