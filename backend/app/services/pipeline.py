@@ -188,7 +188,7 @@ class EvidenceGuardPipeline:
 
         generation_evidence = evidence
         selection_status = "top-score"
-        if mode in {"consensus_rag", "evidenceguard"} and evidence:
+        if mode == "consensus_rag" and evidence:
             generation_evidence = select_consensus_evidence(
                 evidence,
                 graph,

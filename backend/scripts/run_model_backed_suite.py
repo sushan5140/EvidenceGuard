@@ -183,12 +183,12 @@ def neural_ablation_markdown(rows: list[dict]) -> list[str]:
             f"{consensus['wrong_answer_rate'] - conflict['wrong_answer_rate']:+.3f} | "
             f"{consensus['coverage'] - conflict['coverage']:+.3f} |"
         )
-    if consensus and full:
+    if conflict and full:
         lines.append(
-            f"| consensus_rag → evidenceguard | "
-            f"{full['strict_accuracy'] - consensus['strict_accuracy']:+.3f} | "
-            f"{full['wrong_answer_rate'] - consensus['wrong_answer_rate']:+.3f} | "
-            f"{full['coverage'] - consensus['coverage']:+.3f} |"
+            f"| conflict_aware → evidenceguard | "
+            f"{full['strict_accuracy'] - conflict['strict_accuracy']:+.3f} | "
+            f"{full['wrong_answer_rate'] - conflict['wrong_answer_rate']:+.3f} | "
+            f"{full['coverage'] - conflict['coverage']:+.3f} |"
         )
     return lines
 
@@ -230,7 +230,7 @@ def create_comparison_figure(
 
 
 def risk_coverage_rows(runs: list) -> list[dict]:
-    forced = [run for run in runs if run.mode == "consensus_rag"]
+    forced = [run for run in runs if run.mode == "conflict_aware"]
     rows: list[dict] = []
     for threshold in [i / 20 for i in range(0, 20)]:
         answered = [run for run in forced if run.confidence >= threshold]
@@ -472,7 +472,7 @@ async def main() -> None:
         "",
         "## Neural stage ablation",
         "",
-        "Negative wrong-answer deltas are improvements. consensus_rag isolates contradiction-pruned answer assembly; evidenceguard then adds abstention on top of that same path.",
+        "Negative wrong-answer deltas are improvements. consensus_rag is a side ablation for contradiction-pruned answer assembly; evidenceguard adds abstention directly to conflict_aware so a losing selector is not baked into the final system.",
         "",
         *neural_ablation_markdown(ramdocs_rows),
         "",
@@ -501,7 +501,7 @@ async def main() -> None:
         "- No RAMDocs label is passed into retrieval, NLI, scoring, generation, abstention calibration, or abstention logic.",
         "- Strict correctness requires every listed gold answer and no listed wrong answer after normalized phrase matching.",
         "- The generator remains the extractive fallback so this run isolates retrieval/NLI and selective-answering changes rather than mixing in an LLM generator.",
-        "- The risk-coverage curve is post-hoc evaluation built from consensus_rag, the forced-answer parent of EvidenceGuard; it is not used to choose the threshold.",
+        "- The risk-coverage curve is post-hoc evaluation built from conflict_aware, the forced-answer parent of EvidenceGuard; consensus_rag is reported separately as a side ablation.",
         "- The workflow fails if dense retrieval or NLI silently drops to a fallback engine.",
         "",
     ]

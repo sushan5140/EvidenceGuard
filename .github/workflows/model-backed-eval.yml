@@ -94,11 +94,15 @@ jobs:
         run: |
           git config user.name "EvidenceGuard Research Bot"
           git config user.email "actions@users.noreply.github.com"
+          git fetch origin main
+          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "Main advanced after this evaluation started; refusing to publish stale results."
+            exit 0
+          fi
           git add -f research/results/model_backed
           if git diff --cached --quiet; then
             echo "No model-backed result changes to commit."
             exit 0
           fi
           git commit -m "research: update model-backed evaluation results"
-          git pull --rebase origin main
           git push
