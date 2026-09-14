@@ -7,7 +7,11 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 from app.schemas import ResearchMode
-from app.research.metrics import binary_metrics, expected_calibration_error
+from app.research.metrics import (
+    binary_metrics,
+    contains_answer,
+    expected_calibration_error,
+)
 
 if TYPE_CHECKING:
     from app.config import Settings
@@ -25,8 +29,10 @@ class RAMDocsCase:
 class RAMDocsRun:
     index: int
     mode: ResearchMode
-    gold_hit: bool
+    any_gold_hit: bool
+    all_gold_hit: bool
     wrong_answer_hit: bool
+    strict_correct: bool
     abstained: bool
     confidence: float
     conflict_expected: bool
@@ -34,13 +40,6 @@ class RAMDocsRun:
 
 
 def load_ramdocs(path: str | Path, *, limit: int | None = None) -> list[RAMDocsCase]:
-    """Load the official RAMDocs JSONL format.
-
-    Expected fields follow HanNight/RAMDocs:
-    question, documents[{text,type,answer}], gold_answers, wrong_answers.
-    Document type labels are retained for evaluation only and are never passed
-    into the inference pipeline.
-    """
     cases: list[RAMDocsCase] = []
     with Path(path).open("r", encoding="utf-8") as handle:
         for line in handle:
@@ -60,9 +59,18 @@ def load_ramdocs(path: str | Path, *, limit: int | None = None) -> list[RAMDocsC
     return cases
 
 
-def _contains_any(text: str, candidates: list[str]) -> bool:
-    normalized = text.casefold()
-    return any(candidate.casefold() in normalized for candidate in candidates if candidate)
+def _answer_flags(answer: str, case: RAMDocsCase, *, abstained: bool) -> tuple[bool, bool, bool, bool]:
+    if abstained:
+        return False, False, False, False
+
+    gold_matches = [contains_answer(answer, item) for item in case.gold_answers if item]
+    wrong_matches = [contains_answer(answer, item) for item in case.wrong_answers if item]
+
+    any_gold = any(gold_matches) if gold_matches else False
+    all_gold = all(gold_matches) if gold_matches else False
+    wrong = any(wrong_matches)
+    strict = all_gold and not wrong
+    return any_gold, all_gold, wrong, strict
 
 
 async def run_ramdocs(
@@ -74,8 +82,6 @@ async def run_ramdocs(
     use_nli: bool = True,
     use_local_models: bool = True,
 ) -> tuple[list[dict], list[RAMDocsRun]]:
-    # Heavy application imports stay inside the runner so the JSONL adapter can
-    # be unit-tested without importing transformer/HTTP dependencies.
     from app.schemas import DocumentCreate
     from app.services.pipeline import EvidenceGuardPipeline
     from app.services.store import DocumentStore
@@ -97,9 +103,6 @@ async def run_ramdocs(
                 )
                 store = DocumentStore(run_settings.data_file)
 
-                # IMPORTANT: every RAMDocs document receives the same source reliability.
-                # Correct/misinfo/noise labels are evaluation metadata only, preventing
-                # label leakage into EvidenceGuard inference.
                 for doc_index, document in enumerate(case.documents):
                     text = str(document.get("text", "")).strip()
                     if len(text) < 10:
@@ -121,20 +124,22 @@ async def run_ramdocs(
                     mode=mode,
                 )
 
+                any_gold, all_gold, wrong, strict = _answer_flags(
+                    response.answer,
+                    case,
+                    abstained=response.abstained,
+                )
                 doc_types = {str(doc.get("type", "")) for doc in case.documents}
                 conflict_expected = "correct" in doc_types and "misinfo" in doc_types
+
                 runs.append(
                     RAMDocsRun(
                         index=index,
                         mode=mode,
-                        gold_hit=(
-                            not response.abstained
-                            and _contains_any(response.answer, case.gold_answers)
-                        ),
-                        wrong_answer_hit=(
-                            not response.abstained
-                            and _contains_any(response.answer, case.wrong_answers)
-                        ),
+                        any_gold_hit=any_gold,
+                        all_gold_hit=all_gold,
+                        wrong_answer_hit=wrong,
+                        strict_correct=strict,
                         abstained=response.abstained,
                         confidence=response.confidence,
                         conflict_expected=conflict_expected,
@@ -158,8 +163,14 @@ async def run_ramdocs(
             {
                 "mode": mode,
                 "samples": len(subset),
-                "gold_hit_rate": round(
-                    sum(run.gold_hit for run in subset) / len(subset), 4
+                "strict_accuracy": round(
+                    sum(run.strict_correct for run in subset) / len(subset), 4
+                ),
+                "all_gold_hit_rate": round(
+                    sum(run.all_gold_hit for run in subset) / len(subset), 4
+                ),
+                "any_gold_hit_rate": round(
+                    sum(run.any_gold_hit for run in subset) / len(subset), 4
                 ),
                 "wrong_answer_rate": round(
                     sum(run.wrong_answer_hit for run in subset) / len(subset), 4
@@ -170,9 +181,9 @@ async def run_ramdocs(
                 "mean_confidence": round(
                     sum(run.confidence for run in subset) / len(subset), 4
                 ),
-                "ece_gold_hit": round(
+                "ece_strict": round(
                     expected_calibration_error(
-                        [run.gold_hit for run in subset],
+                        [run.strict_correct for run in subset],
                         [run.confidence for run in subset],
                     ),
                     4,

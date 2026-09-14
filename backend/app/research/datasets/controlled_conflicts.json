@@ -2,109 +2,258 @@
   {
     "id": "eiffel_opening",
     "question": "When did the Eiffel Tower open to the public?",
-    "answer_keywords": ["1889"],
+    "answer_keywords": [
+      "1889"
+    ],
     "clean_fact": "The Eiffel Tower opened to the public in 1889.",
     "conflict_fact": "The Eiffel Tower opened to the public in 1905, not 1889.",
-    "clean_contexts": ["Historical records from the Paris exposition state the opening date clearly.", "A museum timeline documents the public opening of the tower.", "An engineering history summarizes the completion and opening period."],
-    "conflict_contexts": ["An unverified retrospective gives a different opening date.", "A secondary blog repeats a disputed date without a primary citation."]
+    "clean_contexts": [
+      "Historical records from the Paris exposition state the opening date clearly.",
+      "A museum timeline documents the public opening of the tower.",
+      "An engineering history summarizes the completion and opening period."
+    ],
+    "conflict_contexts": [
+      "An unverified retrospective gives a different opening date.",
+      "A secondary blog repeats a disputed date without a primary citation."
+    ],
+    "wrong_answer_keywords": [
+      "1905"
+    ]
   },
   {
     "id": "australia_capital",
     "question": "What is the capital city of Australia?",
-    "answer_keywords": ["canberra"],
+    "answer_keywords": [
+      "canberra"
+    ],
     "clean_fact": "Canberra is the capital city of Australia.",
     "conflict_fact": "Sydney is the capital city of Australia, not Canberra.",
-    "clean_contexts": ["An Australian civics reference identifies the national capital.", "A geography handbook lists the country's capital city.", "A government-oriented study note describes the federal capital."],
-    "conflict_contexts": ["A low-quality travel post confuses the largest city with the capital.", "An unattributed summary incorrectly names another city as the capital."]
+    "clean_contexts": [
+      "An Australian civics reference identifies the national capital.",
+      "A geography handbook lists the country's capital city.",
+      "A government-oriented study note describes the federal capital."
+    ],
+    "conflict_contexts": [
+      "A low-quality travel post confuses the largest city with the capital.",
+      "An unattributed summary incorrectly names another city as the capital."
+    ],
+    "wrong_answer_keywords": [
+      "sydney"
+    ]
   },
   {
     "id": "apollo_11",
     "question": "In what year did Apollo 11 land humans on the Moon?",
-    "answer_keywords": ["1969"],
+    "answer_keywords": [
+      "1969"
+    ],
     "clean_fact": "Apollo 11 landed humans on the Moon in 1969.",
     "conflict_fact": "Apollo 11 landed humans on the Moon in 1971, not 1969.",
-    "clean_contexts": ["A spaceflight chronology records the mission milestone.", "An aerospace history gives the year of the lunar landing.", "A mission archive summary states the year of Apollo 11's landing."],
-    "conflict_contexts": ["A fabricated timeline shifts the mission date by two years.", "A poorly sourced article reports an incorrect landing year."]
+    "clean_contexts": [
+      "A spaceflight chronology records the mission milestone.",
+      "An aerospace history gives the year of the lunar landing.",
+      "A mission archive summary states the year of Apollo 11's landing."
+    ],
+    "conflict_contexts": [
+      "A fabricated timeline shifts the mission date by two years.",
+      "A poorly sourced article reports an incorrect landing year."
+    ],
+    "wrong_answer_keywords": [
+      "1971"
+    ]
   },
   {
     "id": "python_creator",
     "question": "Who created the Python programming language?",
-    "answer_keywords": ["guido", "van", "rossum"],
+    "answer_keywords": [
+      "guido",
+      "van",
+      "rossum"
+    ],
     "clean_fact": "Python was created by Guido van Rossum.",
     "conflict_fact": "Python was created by James Gosling, not Guido van Rossum.",
-    "clean_contexts": ["A programming-language history describes Python's origin.", "A software encyclopedia identifies Python's creator.", "A developer education reference summarizes the language's authorship."],
-    "conflict_contexts": ["A misleading post confuses Python with another programming language.", "An incorrect technical summary attributes Python to a different engineer."]
+    "clean_contexts": [
+      "A programming-language history describes Python's origin.",
+      "A software encyclopedia identifies Python's creator.",
+      "A developer education reference summarizes the language's authorship."
+    ],
+    "conflict_contexts": [
+      "A misleading post confuses Python with another programming language.",
+      "An incorrect technical summary attributes Python to a different engineer."
+    ],
+    "wrong_answer_keywords": [
+      "james",
+      "gosling"
+    ]
   },
   {
     "id": "water_boiling",
     "question": "At standard atmospheric pressure, at what temperature does pure water boil in degrees Celsius?",
-    "answer_keywords": ["100"],
+    "answer_keywords": [
+      "100"
+    ],
     "clean_fact": "At standard atmospheric pressure, pure water boils at 100 degrees Celsius.",
     "conflict_fact": "At standard atmospheric pressure, pure water boils at 90 degrees Celsius, not 100.",
-    "clean_contexts": ["A basic chemistry reference gives the normal boiling point of water.", "A laboratory handbook states the boiling temperature at standard pressure.", "A science textbook explains the phase-change temperature under standard conditions."],
-    "conflict_contexts": ["An inaccurate study note reports a lower boiling temperature.", "A corrupted reference substitutes an incorrect numeric value."]
+    "clean_contexts": [
+      "A basic chemistry reference gives the normal boiling point of water.",
+      "A laboratory handbook states the boiling temperature at standard pressure.",
+      "A science textbook explains the phase-change temperature under standard conditions."
+    ],
+    "conflict_contexts": [
+      "An inaccurate study note reports a lower boiling temperature.",
+      "A corrupted reference substitutes an incorrect numeric value."
+    ],
+    "wrong_answer_keywords": [
+      "90"
+    ]
   },
   {
     "id": "solar_system",
     "question": "Which planet is the largest planet in the Solar System?",
-    "answer_keywords": ["jupiter"],
+    "answer_keywords": [
+      "jupiter"
+    ],
     "clean_fact": "Jupiter is the largest planet in the Solar System.",
     "conflict_fact": "Saturn is the largest planet in the Solar System, not Jupiter.",
-    "clean_contexts": ["An astronomy reference compares planetary sizes.", "A planetary science guide identifies the largest planet.", "A school astronomy text ranks the planets by size."],
-    "conflict_contexts": ["A mistaken astronomy post swaps the two largest gas giants.", "A synthetic source incorrectly names Saturn as the largest planet."]
+    "clean_contexts": [
+      "An astronomy reference compares planetary sizes.",
+      "A planetary science guide identifies the largest planet.",
+      "A school astronomy text ranks the planets by size."
+    ],
+    "conflict_contexts": [
+      "A mistaken astronomy post swaps the two largest gas giants.",
+      "A synthetic source incorrectly names Saturn as the largest planet."
+    ],
+    "wrong_answer_keywords": [
+      "saturn"
+    ]
   },
   {
     "id": "japan_capital",
     "question": "What is the capital city of Japan?",
-    "answer_keywords": ["tokyo"],
+    "answer_keywords": [
+      "tokyo"
+    ],
     "clean_fact": "Tokyo is the capital city of Japan.",
     "conflict_fact": "Osaka is the capital city of Japan, not Tokyo.",
-    "clean_contexts": ["A geography reference identifies Japan's national capital.", "A civics guide lists Japan's capital city.", "A country profile describes the seat of the Japanese government."],
-    "conflict_contexts": ["A misleading travel note confuses a major city with the capital.", "An inaccurate summary names Osaka as the national capital."]
+    "clean_contexts": [
+      "A geography reference identifies Japan's national capital.",
+      "A civics guide lists Japan's capital city.",
+      "A country profile describes the seat of the Japanese government."
+    ],
+    "conflict_contexts": [
+      "A misleading travel note confuses a major city with the capital.",
+      "An inaccurate summary names Osaka as the national capital."
+    ],
+    "wrong_answer_keywords": [
+      "osaka"
+    ]
   },
   {
     "id": "mount_everest",
     "question": "What is the highest mountain above sea level on Earth?",
-    "answer_keywords": ["everest"],
+    "answer_keywords": [
+      "everest"
+    ],
     "clean_fact": "Mount Everest is the highest mountain above sea level on Earth.",
     "conflict_fact": "K2 is the highest mountain above sea level on Earth, not Mount Everest.",
-    "clean_contexts": ["A physical geography textbook ranks mountains by elevation.", "A mountaineering reference gives the highest summit above sea level.", "A geographic encyclopedia identifies Earth's highest mountain."],
-    "conflict_contexts": ["A fabricated climbing guide incorrectly ranks K2 first.", "An unreliable article swaps the two well-known high peaks."]
+    "clean_contexts": [
+      "A physical geography textbook ranks mountains by elevation.",
+      "A mountaineering reference gives the highest summit above sea level.",
+      "A geographic encyclopedia identifies Earth's highest mountain."
+    ],
+    "conflict_contexts": [
+      "A fabricated climbing guide incorrectly ranks K2 first.",
+      "An unreliable article swaps the two well-known high peaks."
+    ],
+    "wrong_answer_keywords": [
+      "k2"
+    ]
   },
   {
     "id": "heart_chambers",
     "question": "How many chambers does a normal human heart have?",
-    "answer_keywords": ["four"],
+    "answer_keywords": [
+      "four"
+    ],
     "clean_fact": "A normal human heart has four chambers.",
     "conflict_fact": "A normal human heart has three chambers, not four.",
-    "clean_contexts": ["An anatomy textbook describes the chambers of the human heart.", "A medical education reference gives the heart's basic structure.", "A physiology note lists the atria and ventricles."],
-    "conflict_contexts": ["An inaccurate anatomy summary reports the wrong number of chambers.", "A corrupted study card incorrectly states that the heart has three chambers."]
+    "clean_contexts": [
+      "An anatomy textbook describes the chambers of the human heart.",
+      "A medical education reference gives the heart's basic structure.",
+      "A physiology note lists the atria and ventricles."
+    ],
+    "conflict_contexts": [
+      "An inaccurate anatomy summary reports the wrong number of chambers.",
+      "A corrupted study card incorrectly states that the heart has three chambers."
+    ],
+    "wrong_answer_keywords": [
+      "three"
+    ]
   },
   {
     "id": "c_creator",
     "question": "Who created the C programming language?",
-    "answer_keywords": ["dennis", "ritchie"],
+    "answer_keywords": [
+      "dennis",
+      "ritchie"
+    ],
     "clean_fact": "The C programming language was created by Dennis Ritchie.",
     "conflict_fact": "The C programming language was created by Bjarne Stroustrup, not Dennis Ritchie.",
-    "clean_contexts": ["A computing history describes the origin of the C language.", "A programming reference identifies C's creator.", "A software history note discusses C's development at Bell Labs."],
-    "conflict_contexts": ["A misleading post confuses C with C++.", "An inaccurate technical summary attributes C to a different language designer."]
+    "clean_contexts": [
+      "A computing history describes the origin of the C language.",
+      "A programming reference identifies C's creator.",
+      "A software history note discusses C's development at Bell Labs."
+    ],
+    "conflict_contexts": [
+      "A misleading post confuses C with C++.",
+      "An inaccurate technical summary attributes C to a different language designer."
+    ],
+    "wrong_answer_keywords": [
+      "bjarne",
+      "stroustrup"
+    ]
   },
   {
     "id": "red_planet",
     "question": "Which planet is commonly called the Red Planet?",
-    "answer_keywords": ["mars"],
+    "answer_keywords": [
+      "mars"
+    ],
     "clean_fact": "Mars is commonly called the Red Planet.",
     "conflict_fact": "Venus is commonly called the Red Planet, not Mars.",
-    "clean_contexts": ["An astronomy guide explains the nickname of Mars.", "A planetary science reference discusses Mars's reddish appearance.", "A school science text identifies the Red Planet."],
-    "conflict_contexts": ["An erroneous astronomy card assigns the nickname to Venus.", "A synthetic misinformation source names the wrong planet."]
+    "clean_contexts": [
+      "An astronomy guide explains the nickname of Mars.",
+      "A planetary science reference discusses Mars's reddish appearance.",
+      "A school science text identifies the Red Planet."
+    ],
+    "conflict_contexts": [
+      "An erroneous astronomy card assigns the nickname to Venus.",
+      "A synthetic misinformation source names the wrong planet."
+    ],
+    "wrong_answer_keywords": [
+      "venus"
+    ]
   },
   {
     "id": "gold_symbol",
     "question": "What is the chemical symbol for gold?",
-    "answer_keywords": ["au"],
+    "answer_keywords": [
+      "au"
+    ],
     "clean_fact": "The chemical symbol for gold is Au.",
     "conflict_fact": "The chemical symbol for gold is Ag, not Au.",
-    "clean_contexts": ["A periodic-table reference lists the symbol for gold.", "A chemistry textbook identifies element symbols.", "A laboratory reference gives gold's standard chemical symbol."],
-    "conflict_contexts": ["A corrupted periodic-table note swaps gold and silver symbols.", "An inaccurate chemistry card gives the wrong symbol for gold."]
+    "clean_contexts": [
+      "A periodic-table reference lists the symbol for gold.",
+      "A chemistry textbook identifies element symbols.",
+      "A laboratory reference gives gold's standard chemical symbol."
+    ],
+    "conflict_contexts": [
+      "A corrupted periodic-table note swaps gold and silver symbols.",
+      "An inaccurate chemistry card gives the wrong symbol for gold."
+    ],
+    "wrong_answer_keywords": [
+      "ag"
+    ]
   }
 ]

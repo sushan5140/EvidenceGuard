@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 
@@ -53,6 +54,19 @@ def expected_calibration_error(
     return ece
 
 
+def normalize_answer_text(text: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", " ", text.casefold())
+    return " ".join(normalized.split())
+
+
+def contains_answer(text: str, answer: str) -> bool:
+    candidate = normalize_answer_text(answer)
+    if not candidate:
+        return False
+    haystack = f" {normalize_answer_text(text)} "
+    return f" {candidate} " in haystack
+
+
 def keyword_answer_correct(
     answer: str,
     required_keywords: list[str],
@@ -61,8 +75,23 @@ def keyword_answer_correct(
 ) -> bool:
     if abstained or not required_keywords:
         return False
-    normalized = answer.casefold()
-    return all(keyword.casefold() in normalized for keyword in required_keywords)
+    return all(contains_answer(answer, keyword) for keyword in required_keywords)
+
+
+def strict_answer_correct(
+    answer: str,
+    required_keywords: list[str],
+    forbidden_keywords: list[str],
+    *,
+    abstained: bool,
+) -> bool:
+    if not keyword_answer_correct(
+        answer,
+        required_keywords,
+        abstained=abstained,
+    ):
+        return False
+    return not any(contains_answer(answer, keyword) for keyword in forbidden_keywords)
 
 
 def selective_accuracy(correctness: list[bool], abstained: list[bool]) -> float:

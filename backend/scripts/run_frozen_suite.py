@@ -54,14 +54,15 @@ def controlled_markdown(rows: list[dict]) -> list[str]:
 
 def ramdocs_markdown(rows: list[dict]) -> list[str]:
     lines = [
-        "| Mode | Samples | Gold hit | Wrong-answer hit | Abstention | Mean conf. | ECE | Conflict F1 |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Mode | Samples | Strict accuracy | All-gold hit | Any-gold hit | Wrong-answer hit | Abstention | Mean conf. | ECE | Conflict F1 |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows:
         lines.append(
-            f"| {row['mode']} | {row['samples']} | {pct(row['gold_hit_rate'])} | "
+            f"| {row['mode']} | {row['samples']} | {pct(row['strict_accuracy'])} | "
+            f"{pct(row['all_gold_hit_rate'])} | {pct(row['any_gold_hit_rate'])} | "
             f"{pct(row['wrong_answer_rate'])} | {pct(row['abstention_rate'])} | "
-            f"{pct(row['mean_confidence'])} | {row['ece_gold_hit']:.3f} | "
+            f"{pct(row['mean_confidence'])} | {row['ece_strict']:.3f} | "
             f"{row['conflict_f1']:.3f} |"
         )
     return lines
@@ -112,14 +113,14 @@ def create_figures(output: Path, controlled_rows: list[dict], ramdocs_rows: list
     plt.close(fig)
 
     labels = [row["mode"] for row in ramdocs_rows]
-    gold = [100 * row["gold_hit_rate"] for row in ramdocs_rows]
+    gold = [100 * row["strict_accuracy"] for row in ramdocs_rows]
     wrong = [100 * row["wrong_answer_rate"] for row in ramdocs_rows]
     abstain = [100 * row["abstention_rate"] for row in ramdocs_rows]
     x = list(range(len(labels)))
     width = 0.25
 
     fig, ax = plt.subplots(figsize=(9, 5))
-    ax.bar([i - width for i in x], gold, width, label="Gold hit")
+    ax.bar([i - width for i in x], gold, width, label="Strict correct")
     ax.bar(x, wrong, width, label="Wrong-answer hit")
     ax.bar([i + width for i in x], abstain, width, label="Abstention")
     ax.set_xticks(x)
@@ -141,7 +142,7 @@ def failure_analysis(ramdocs_path: Path, runs: list, output: Path) -> dict:
     hybrid = [run for run in runs if run.mode == "hybrid_rag"]
 
     categories = {
-        "gold_hits": [run for run in eg if run.gold_hit],
+        "strict_correct": [run for run in eg if run.strict_correct],
         "wrong_answer_hits": [run for run in eg if run.wrong_answer_hit],
         "abstentions": [run for run in eg if run.abstained],
         "conflict_misses": [
@@ -155,9 +156,9 @@ def failure_analysis(ramdocs_path: Path, runs: list, output: Path) -> dict:
         full = by_mode_index.get(("evidenceguard", base.index))
         if full is None:
             continue
-        if base.wrong_answer_hit and (full.gold_hit or full.abstained):
+        if (not base.strict_correct) and (full.strict_correct or full.abstained):
             categories["improvements_over_hybrid"].append(full)
-        if base.gold_hit and not full.gold_hit:
+        if base.strict_correct and not full.strict_correct:
             categories["regressions_vs_hybrid"].append(full)
 
     lines = [
@@ -194,7 +195,8 @@ def failure_analysis(ramdocs_path: Path, runs: list, output: Path) -> dict:
                     "",
                     f"**Wrong answers:** {', '.join(case.wrong_answers) or 'n/a'}",
                     "",
-                    f"**Outcome:** gold_hit={run.gold_hit}, wrong_hit={run.wrong_answer_hit}, "
+                    f"**Outcome:** strict_correct={run.strict_correct}, all_gold={run.all_gold_hit}, "
+                    f"any_gold={run.any_gold_hit}, wrong_hit={run.wrong_answer_hit}, "
                     f"abstained={run.abstained}, confidence={run.confidence:.3f}, "
                     f"conflict_detected={run.conflict_detected}",
                     "",
@@ -313,7 +315,8 @@ async def main() -> None:
         "",
         "- Controlled tuning uses only validation cases; the listed controlled results use held-out case IDs.",
         "- RAMDocs labels are not used as inference features and are never used for tuning.",
-        "- RAMDocs metrics here are adapter metrics (gold-hit/wrong-hit), not the paper's strict official exact-match implementation.",
+        "- RAMDocs strict correctness requires all listed gold answers and zero listed wrong answers after normalized phrase matching.",
+        "- This is a transparent adapter metric, not a claim of byte-for-byte equivalence with the paper's official evaluator.",
         "- This frozen run intentionally uses deterministic fallback retrieval and heuristic NLI for reproducibility on CI.",
         "- Model-backed experiments should be reported as a separate run rather than silently replacing these results.",
         "",

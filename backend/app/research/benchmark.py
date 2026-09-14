@@ -19,8 +19,8 @@ from app.research.metrics import (
     binary_metrics,
     coverage,
     expected_calibration_error,
-    keyword_answer_correct,
     selective_accuracy,
+    strict_answer_correct,
 )
 
 
@@ -46,7 +46,6 @@ def load_controlled_cases() -> list[dict]:
 
 def _documents_for_case(case: dict, ratio: float) -> list[DocumentCreate]:
     ratio = max(0.0, min(0.9, ratio))
-    # 20 makes 0/10/25/50/75% conditions exact.
     total = 20
     conflict_count = int(round(total * ratio))
     clean_count = total - conflict_count
@@ -118,9 +117,10 @@ async def run_controlled_benchmark(
                         use_nli=use_nli,
                         mode=mode,
                     )
-                    correct = keyword_answer_correct(
+                    correct = strict_answer_correct(
                         response.answer,
                         case["answer_keywords"],
+                        case.get("wrong_answer_keywords", []),
                         abstained=response.abstained,
                     )
                     conflict_detected = any(
@@ -189,12 +189,12 @@ async def run_controlled_benchmark(
 
     return (
         BenchmarkResponse(
-            benchmark="controlled-conflicts-v2",
+            benchmark="controlled-conflicts-v3-strict",
             cases=len(cases),
             rows=rows,
             notes=[
                 "Synthetic suite with exact conflict ratios and held-out case support.",
-                "Accuracy uses required answer-keyword matching, not an LLM judge.",
+                "Strict correctness requires all required gold keywords and zero known wrong-answer keywords.",
                 "Conflict F1 is query-level conflict-presence detection.",
                 "Use RAMDocs results separately for external validity.",
             ],
