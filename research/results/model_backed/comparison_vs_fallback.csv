@@ -1,0 +1,5 @@
+mode,model_strict_accuracy,fallback_strict_accuracy,delta_strict_accuracy,model_selective_accuracy,fallback_selective_accuracy,delta_selective_accuracy,model_wrong_answer_rate,fallback_wrong_answer_rate,delta_wrong_answer_rate,model_coverage,fallback_coverage,delta_coverage,model_conflict_f1,fallback_conflict_f1,delta_conflict_f1
+basic_rag,0.164,0.164,0.0,0.1667,0.1667,0.0,0.23,0.23,0.0,0.984,0.984,0.0,0.0,0.0,0.0
+hybrid_rag,0.18,0.226,-0.046,0.18,0.226,-0.046,0.312,0.244,0.068,1.0,1.0,0.0,0.0,0.0,0.0
+conflict_aware,0.148,0.196,-0.048,0.148,0.196,-0.048,0.196,0.19,0.006,1.0,1.0,0.0,0.6657,0.5765,0.0892
+evidenceguard,0.038,0.148,-0.11,0.2794,0.2379,0.0415,0.026,0.132,-0.106,0.136,0.622,-0.486,0.6657,0.5765,0.0892

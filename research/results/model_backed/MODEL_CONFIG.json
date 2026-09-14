@@ -1,0 +1,10 @@
+{
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "nli_model": "cross-encoder/nli-MiniLM2-L6-H768",
+  "evidence_retrieval_weight": 0.5,
+  "evidence_reliability_weight": 0.3,
+  "evidence_agreement_weight": 0.2,
+  "abstain_threshold": 0.6,
+  "ramdocs_samples": 500,
+  "configuration_policy": "Transferred unchanged from the frozen fallback validation run."
+}

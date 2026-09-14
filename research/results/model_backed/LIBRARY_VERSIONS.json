@@ -1,0 +1,5 @@
+{
+  "sentence_transformers": "5.7.0",
+  "transformers": "5.17.0",
+  "torch": "2.14.0+cpu"
+}

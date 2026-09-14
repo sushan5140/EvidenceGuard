@@ -1,0 +1,5 @@
+mode,samples,strict_accuracy,selective_strict_accuracy,coverage,all_gold_hit_rate,any_gold_hit_rate,wrong_answer_rate,wrong_answer_among_answered,abstention_rate,mean_confidence,ece_strict,conflict_precision,conflict_recall,conflict_f1
+basic_rag,500,0.164,0.1667,0.984,0.222,0.782,0.23,0.2337,0.016,0.8401,0.6761,0.0,0.0,0.0
+hybrid_rag,500,0.18,0.18,1.0,0.264,0.792,0.312,0.312,0.0,0.8114,0.6314,0.0,0.0,0.0
+conflict_aware,500,0.148,0.148,1.0,0.178,0.688,0.196,0.196,0.0,0.4361,0.3045,0.5111,0.9544,0.6657
+evidenceguard,500,0.038,0.2794,0.136,0.048,0.078,0.026,0.1912,0.864,0.4361,0.3981,0.5111,0.9544,0.6657
