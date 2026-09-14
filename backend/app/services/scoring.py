@@ -136,3 +136,85 @@ def select_consensus_evidence(
             break
 
     return selected
+
+
+
+def select_answer_cluster_representatives(
+    evidence: list[EvidenceItem],
+    edges: list[ConflictEdge],
+    *,
+    max_items: int = 3,
+    support_threshold: float = 0.65,
+) -> list[EvidenceItem]:
+    """Return one strong representative from each evidence-support cluster.
+
+    RAMDocs-style ambiguity can make mutually contradictory answers legitimate
+    for different entities sharing the same surface name. Instead of deleting
+    contradictions, this exploratory selector groups claims connected by
+    strong support edges and ranks those clusters by accumulated evidence mass.
+
+    The selector uses no benchmark labels and never treats contradiction as
+    proof that one side is false.
+    """
+
+    if not evidence or max_items <= 0:
+        return []
+
+    by_id = {item.id: item for item in evidence}
+    parent = {item.id: item.id for item in evidence}
+
+    def find(node: str) -> str:
+        root = node
+        while parent[root] != root:
+            root = parent[root]
+        while parent[node] != node:
+            next_node = parent[node]
+            parent[node] = root
+            node = next_node
+        return root
+
+    def union(left: str, right: str) -> None:
+        left_root = find(left)
+        right_root = find(right)
+        if left_root != right_root:
+            parent[right_root] = left_root
+
+    for edge in edges:
+        if (
+            edge.relation == "supports"
+            and edge.confidence >= support_threshold
+            and edge.source in by_id
+            and edge.target in by_id
+        ):
+            union(edge.source, edge.target)
+
+    clusters: dict[str, list[EvidenceItem]] = defaultdict(list)
+    for item in evidence:
+        clusters[find(item.id)].append(item)
+
+    ranked_clusters: list[tuple[float, EvidenceItem]] = []
+    for members in clusters.values():
+        representative = max(
+            members,
+            key=lambda item: (
+                item.evidence_score,
+                item.agreement_score,
+                item.retrieval_score,
+            ),
+        )
+        # Sublinear support-mass score: repeated support can strengthen a
+        # hypothesis without letting cluster size dominate linearly.
+        support_mass = sum(item.evidence_score for item in members)
+        cluster_score = support_mass / (len(members) ** 0.5)
+        ranked_clusters.append((cluster_score, representative))
+
+    ranked_clusters.sort(
+        key=lambda pair: (
+            pair[0],
+            pair[1].evidence_score,
+            pair[1].agreement_score,
+            pair[1].retrieval_score,
+        ),
+        reverse=True,
+    )
+    return [representative for _, representative in ranked_clusters[:max_items]]

@@ -3,6 +3,7 @@ from app.services.scoring import (
     agreement_scores,
     answer_confidence,
     conflict_rate,
+    select_answer_cluster_representatives,
     select_consensus_evidence,
 )
 
@@ -106,3 +107,55 @@ def test_consensus_selector_never_replaces_strongest_anchor_with_popular_cluster
     selected = select_consensus_evidence(evidence, edges, max_items=3)
 
     assert [entry.id for entry in selected] == ["anchor"]
+
+
+
+def test_answer_cluster_selector_keeps_representatives_from_distinct_support_clusters():
+    evidence = [
+        item("a1", evidence_score=0.80),
+        item("a2", evidence_score=0.78),
+        item("b1", evidence_score=0.76),
+        item("b2", evidence_score=0.74),
+        item("noise", evidence_score=0.60),
+    ]
+    edges = [
+        ConflictEdge(source="a1", target="a2", relation="supports", confidence=0.90),
+        ConflictEdge(source="b1", target="b2", relation="supports", confidence=0.88),
+        ConflictEdge(source="a1", target="b1", relation="contradicts", confidence=0.92),
+    ]
+
+    selected = select_answer_cluster_representatives(evidence, edges, max_items=3)
+    ids = [entry.id for entry in selected]
+
+    assert "a1" in ids
+    assert "b1" in ids
+    assert len(ids) == 3
+
+
+def test_answer_cluster_selector_rewards_repeated_support_sublinearly():
+    evidence = [
+        item("solo", evidence_score=0.90),
+        item("pair1", evidence_score=0.70),
+        item("pair2", evidence_score=0.68),
+    ]
+    edges = [
+        ConflictEdge(source="pair1", target="pair2", relation="supports", confidence=0.95),
+    ]
+
+    selected = select_answer_cluster_representatives(evidence, edges, max_items=2)
+
+    assert selected[0].id == "pair1"
+    assert selected[1].id == "solo"
+
+
+def test_answer_cluster_selector_matches_top_scores_when_no_support_edges_exist():
+    evidence = [
+        item("a", evidence_score=0.90),
+        item("b", evidence_score=0.80),
+        item("c", evidence_score=0.70),
+        item("d", evidence_score=0.60),
+    ]
+
+    selected = select_answer_cluster_representatives(evidence, [], max_items=3)
+
+    assert [entry.id for entry in selected] == ["a", "b", "c"]

@@ -14,6 +14,7 @@ from app.services.scoring import (
     answer_confidence,
     conflict_rate,
     evidence_score,
+    select_answer_cluster_representatives,
     select_consensus_evidence,
 )
 from app.services.store import DocumentStore
@@ -134,7 +135,7 @@ class EvidenceGuardPipeline:
         )
         claims = self._claims(question, retrieved)
 
-        conflict_enabled = mode in {"conflict_aware", "consensus_rag", "evidenceguard"}
+        conflict_enabled = mode in {"conflict_aware", "consensus_rag", "ambiguity_rag", "evidenceguard"}
         graph = self._graph(claims, use_nli=use_nli) if conflict_enabled else []
         agreements = agreement_scores([item["id"] for item in claims], graph)
 
@@ -196,6 +197,15 @@ class EvidenceGuardPipeline:
             )
             selection_status = (
                 f"consensus-pruned:{len(generation_evidence)}/{len(evidence)}"
+            )
+        elif mode == "ambiguity_rag" and evidence:
+            generation_evidence = select_answer_cluster_representatives(
+                evidence,
+                graph,
+                max_items=3,
+            )
+            selection_status = (
+                f"answer-clusters:{len(generation_evidence)}/{len(evidence)}"
             )
 
         if abstained:
