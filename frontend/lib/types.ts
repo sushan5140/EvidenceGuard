@@ -1,3 +1,9 @@
+export type ResearchMode =
+  | "basic_rag"
+  | "hybrid_rag"
+  | "conflict_aware"
+  | "evidenceguard";
+
 export type EvidenceItem = {
   id: string;
   document_id: string;
@@ -28,6 +34,7 @@ export type QueryResponse = {
   graph: ConflictEdge[];
   generator: "extractive" | "llm";
   model_status: Record<string, string>;
+  mode: ResearchMode;
 };
 
 export type DocumentRecord = {
@@ -53,4 +60,26 @@ export type AttackResponse = {
   baseline: QueryResponse;
   attacked: QueryResponse;
   injected_document_ids: string[];
+};
+
+export type BenchmarkSummaryRow = {
+  mode: ResearchMode;
+  conflict_ratio: number;
+  samples: number;
+  accuracy: number;
+  selective_accuracy: number;
+  coverage: number;
+  abstention_rate: number;
+  mean_confidence: number;
+  ece: number;
+  conflict_precision: number;
+  conflict_recall: number;
+  conflict_f1: number;
+};
+
+export type BenchmarkResponse = {
+  benchmark: string;
+  cases: number;
+  rows: BenchmarkSummaryRow[];
+  notes: string[];
 };

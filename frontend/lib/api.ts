@@ -1,4 +1,11 @@
-import type { AttackResponse, DocumentRecord, Health, QueryResponse } from "./types";
+import type {
+  AttackResponse,
+  BenchmarkResponse,
+  DocumentRecord,
+  Health,
+  QueryResponse,
+  ResearchMode,
+} from "./types";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -21,7 +28,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => request<Health>("/api/health"),
   documents: () => request<DocumentRecord[]>("/api/documents"),
-  loadDemo: () => request<{ added: number; documents: number }>("/api/demo/load", { method: "POST" }),
+  loadDemo: () =>
+    request<{ added: number; documents: number }>("/api/demo/load", {
+      method: "POST",
+    }),
   addDocument: (body: {
     title: string;
     text: string;
@@ -32,18 +42,33 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  query: (question: string, useNli = true) =>
+  query: (question: string, useNli = true, mode: ResearchMode = "evidenceguard") =>
     request<QueryResponse>("/api/query", {
       method: "POST",
-      body: JSON.stringify({ question, top_k: 8, use_nli: useNli }),
+      body: JSON.stringify({ question, top_k: 8, use_nli: useNli, mode }),
     }),
-  attack: (question: string, injectedClaim: string) =>
+  attack: (
+    question: string,
+    injectedClaim: string,
+    mode: ResearchMode = "evidenceguard"
+  ) =>
     request<AttackResponse>("/api/experiments/attack", {
       method: "POST",
       body: JSON.stringify({
         question,
         injected_claims: [injectedClaim],
         top_k: 8,
+        mode,
+      }),
+    }),
+  controlledBenchmark: () =>
+    request<BenchmarkResponse>("/api/benchmarks/controlled", {
+      method: "POST",
+      body: JSON.stringify({
+        modes: ["basic_rag", "hybrid_rag", "conflict_aware", "evidenceguard"],
+        conflict_ratios: [0, 0.1, 0.25, 0.5, 0.75],
+        use_nli: false,
+        use_local_models: false,
       }),
     }),
 };

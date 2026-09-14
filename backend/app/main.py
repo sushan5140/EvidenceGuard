@@ -7,7 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.demo import load_demo
+from app.research.benchmark import run_controlled_benchmark
 from app.schemas import (
+    BenchmarkRequest,
+    BenchmarkResponse,
     DocumentCreate,
     DocumentRecord,
     ExperimentRequest,
@@ -27,7 +30,7 @@ pipeline = EvidenceGuardPipeline(settings, store)
 
 app = FastAPI(
     title="EvidenceGuard API",
-    version="0.1.0",
+    version="0.2.0",
     description="Conflict-aware RAG research prototype.",
 )
 app.add_middleware(
@@ -109,6 +112,7 @@ async def query(request: QueryRequest) -> QueryResponse:
         top_k=request.top_k,
         abstain_threshold=request.abstain_threshold,
         use_nli=request.use_nli,
+        mode=request.mode,
     )
 
 
@@ -132,7 +136,11 @@ def clear_injected() -> dict[str, int]:
 
 @app.post("/api/experiments/attack", response_model=ExperimentResponse)
 async def attack_experiment(request: ExperimentRequest) -> ExperimentResponse:
-    baseline = await pipeline.query(request.question, top_k=request.top_k)
+    baseline = await pipeline.query(
+        request.question,
+        top_k=request.top_k,
+        mode=request.mode,
+    )
     ids: list[str] = []
     try:
         for index, claim in enumerate(request.injected_claims, start=1):
@@ -146,7 +154,11 @@ async def attack_experiment(request: ExperimentRequest) -> ExperimentResponse:
                 injected=True,
             )
             ids.append(record.id)
-        attacked = await pipeline.query(request.question, top_k=request.top_k)
+        attacked = await pipeline.query(
+            request.question,
+            top_k=request.top_k,
+            mode=request.mode,
+        )
     finally:
         store.clear_injected()
 
@@ -155,6 +167,18 @@ async def attack_experiment(request: ExperimentRequest) -> ExperimentResponse:
         attacked=attacked,
         injected_document_ids=ids,
     )
+
+
+@app.post("/api/benchmarks/controlled", response_model=BenchmarkResponse)
+async def controlled_benchmark(request: BenchmarkRequest) -> BenchmarkResponse:
+    result, _ = await run_controlled_benchmark(
+        settings,
+        modes=request.modes,
+        conflict_ratios=request.conflict_ratios,
+        use_nli=request.use_nli,
+        use_local_models=request.use_local_models,
+    )
+    return result
 
 
 @app.post("/api/demo/load")
