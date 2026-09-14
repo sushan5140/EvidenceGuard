@@ -1,0 +1,50 @@
+[
+  {
+    "mode": "basic_rag",
+    "samples": 500,
+    "gold_hit_rate": 0.784,
+    "wrong_answer_rate": 0.234,
+    "abstention_rate": 0.016,
+    "mean_confidence": 0.8401,
+    "ece_gold_hit": 0.1367,
+    "conflict_precision": 0.0,
+    "conflict_recall": 0.0,
+    "conflict_f1": 0.0
+  },
+  {
+    "mode": "hybrid_rag",
+    "samples": 500,
+    "gold_hit_rate": 0.828,
+    "wrong_answer_rate": 0.242,
+    "abstention_rate": 0.0,
+    "mean_confidence": 0.7872,
+    "ece_gold_hit": 0.1307,
+    "conflict_precision": 0.0,
+    "conflict_recall": 0.0,
+    "conflict_f1": 0.0
+  },
+  {
+    "mode": "conflict_aware",
+    "samples": 500,
+    "gold_hit_rate": 0.754,
+    "wrong_answer_rate": 0.188,
+    "abstention_rate": 0.0,
+    "mean_confidence": 0.6334,
+    "ece_gold_hit": 0.1758,
+    "conflict_precision": 0.5534,
+    "conflict_recall": 0.6017,
+    "conflict_f1": 0.5765
+  },
+  {
+    "mode": "evidenceguard",
+    "samples": 500,
+    "gold_hit_rate": 0.468,
+    "wrong_answer_rate": 0.13,
+    "abstention_rate": 0.378,
+    "mean_confidence": 0.6334,
+    "ece_gold_hit": 0.2194,
+    "conflict_precision": 0.5534,
+    "conflict_recall": 0.6017,
+    "conflict_f1": 0.5765
+  }
+]

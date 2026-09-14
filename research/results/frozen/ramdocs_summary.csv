@@ -1,0 +1,5 @@
+mode,samples,gold_hit_rate,wrong_answer_rate,abstention_rate,mean_confidence,ece_gold_hit,conflict_precision,conflict_recall,conflict_f1
+basic_rag,500,0.784,0.234,0.016,0.8401,0.1367,0.0,0.0,0.0
+hybrid_rag,500,0.828,0.242,0.0,0.7872,0.1307,0.0,0.0,0.0
+conflict_aware,500,0.754,0.188,0.0,0.6334,0.1758,0.5534,0.6017,0.5765
+evidenceguard,500,0.468,0.13,0.378,0.6334,0.2194,0.5534,0.6017,0.5765

@@ -1,0 +1,38 @@
+{
+  "evidence_retrieval_weight": 0.5,
+  "evidence_reliability_weight": 0.3,
+  "evidence_agreement_weight": 0.2,
+  "abstain_threshold": 0.6,
+  "validation_score": 0.55386,
+  "validation_utility": 0.573333,
+  "validation_ece": 0.129823,
+  "validation_coverage": 0.966667,
+  "protocol": {
+    "suite": "controlled-conflicts-v2",
+    "validation_case_ids": [
+      "apollo_11",
+      "c_creator",
+      "gold_symbol",
+      "japan_capital",
+      "python_creator",
+      "solar_system"
+    ],
+    "heldout_test_case_ids": [
+      "australia_capital",
+      "eiffel_opening",
+      "heart_chambers",
+      "mount_everest",
+      "red_planet",
+      "water_boiling"
+    ],
+    "conflict_ratios": [
+      0.0,
+      0.1,
+      0.25,
+      0.5,
+      0.75
+    ],
+    "tuning_models": "deterministic fallback retrieval + heuristic NLI",
+    "external_evaluation": "RAMDocs_test.jsonl, full file, no tuning on RAMDocs labels"
+  }
+}

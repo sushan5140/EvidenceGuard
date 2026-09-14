@@ -1,0 +1,4 @@
+Dataset: RAMDocs_test.jsonl
+Source repository: https://github.com/HanNight/RAMDocs
+Raw source: https://raw.githubusercontent.com/HanNight/RAMDocs/main/RAMDocs_test.jsonl
+Evaluation labels are not used as EvidenceGuard inference inputs.
