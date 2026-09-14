@@ -11,6 +11,10 @@ from pathlib import Path
 from app.config import get_settings
 from app.research.benchmark import run_controlled_benchmark
 from app.research.ramdocs import load_ramdocs, run_ramdocs
+from app.research.tuning import (
+    MODEL_THRESHOLD_CANDIDATES,
+    calibrate_abstention_threshold_from_records,
+)
 
 
 MODES = ["basic_rag", "hybrid_rag", "conflict_aware", "evidenceguard"]
@@ -173,7 +177,10 @@ def create_comparison_figure(
     width = 0.35
 
     model_wrong = [100 * row["wrong_answer_rate"] for row in model_rows]
-    fallback_wrong = [100 * float(base[row["mode"]]["wrong_answer_rate"]) for row in model_rows]
+    fallback_wrong = [
+        100 * float(base[row["mode"]]["wrong_answer_rate"])
+        for row in model_rows
+    ]
 
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.bar([i - width / 2 for i in x], fallback_wrong, width, label="Fallback")
@@ -189,6 +196,70 @@ def create_comparison_figure(
     figure_dir = output / "figures"
     figure_dir.mkdir(parents=True, exist_ok=True)
     fig.savefig(figure_dir / "wrong_answer_comparison.png", dpi=180)
+    plt.close(fig)
+
+
+def risk_coverage_rows(runs: list) -> list[dict]:
+    forced = [run for run in runs if run.mode == "conflict_aware"]
+    rows: list[dict] = []
+    for threshold in [i / 20 for i in range(0, 20)]:
+        answered = [run for run in forced if run.confidence >= threshold]
+        correct = sum(run.strict_correct for run in answered)
+        coverage = len(answered) / len(forced) if forced else 0.0
+        selective_accuracy = correct / len(answered) if answered else 0.0
+        rows.append(
+            {
+                "threshold": round(threshold, 2),
+                "coverage": round(coverage, 4),
+                "selective_strict_accuracy": round(selective_accuracy, 4),
+                "selective_risk": round(1.0 - selective_accuracy, 4)
+                if answered
+                else 0.0,
+                "answered": len(answered),
+                "samples": len(forced),
+            }
+        )
+    return rows
+
+
+def create_risk_coverage_figure(
+    output: Path,
+    rows: list[dict],
+    *,
+    selected_threshold: float,
+) -> None:
+    import matplotlib.pyplot as plt
+
+    if not rows:
+        return
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(
+        [100 * row["coverage"] for row in rows],
+        [100 * row["selective_risk"] for row in rows],
+        marker="o",
+    )
+
+    selected = min(
+        rows,
+        key=lambda row: abs(row["threshold"] - selected_threshold),
+    )
+    ax.scatter(
+        [100 * selected["coverage"]],
+        [100 * selected["selective_risk"]],
+        s=70,
+        label=f"calibrated threshold={selected_threshold:.2f}",
+    )
+    ax.set_xlabel("Coverage (%)")
+    ax.set_ylabel("Selective risk (%)")
+    ax.set_title("RAMDocs risk-coverage curve")
+    ax.grid(alpha=0.25)
+    ax.legend()
+    fig.tight_layout()
+
+    figure_dir = output / "figures"
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    fig.savefig(figure_dir / "risk_coverage.png", dpi=180)
     plt.close(fig)
 
 
@@ -238,12 +309,12 @@ async def main() -> None:
 
     frozen = json.loads(Path(args.frozen_config).read_text(encoding="utf-8"))
     fallback_rows = read_csv(Path(args.fallback_summary))
-    settings = get_settings().model_copy(
+    base_settings = get_settings().model_copy(
         update={
             "evidence_retrieval_weight": frozen["evidence_retrieval_weight"],
             "evidence_reliability_weight": frozen["evidence_reliability_weight"],
             "evidence_agreement_weight": frozen["evidence_agreement_weight"],
-            "default_abstain_threshold": frozen["abstain_threshold"],
+            "default_abstain_threshold": 0.0,
             "enable_local_models": True,
             "llm_api_base": None,
             "llm_api_key": None,
@@ -251,7 +322,25 @@ async def main() -> None:
         }
     )
 
+    validation_ids = set(frozen["protocol"]["validation_case_ids"])
     heldout_ids = set(frozen["protocol"]["heldout_test_case_ids"])
+
+    _, validation_runs = await run_controlled_benchmark(
+        base_settings,
+        modes=["evidenceguard"],
+        conflict_ratios=CONFLICT_RATIOS,
+        use_nli=True,
+        use_local_models=True,
+        case_ids=validation_ids,
+    )
+    calibration, calibration_trials = calibrate_abstention_threshold_from_records(
+        validation_runs,
+        candidates=MODEL_THRESHOLD_CANDIDATES,
+    )
+
+    settings = base_settings.model_copy(
+        update={"default_abstain_threshold": calibration.abstain_threshold}
+    )
 
     controlled, controlled_runs = await run_controlled_benchmark(
         settings,
@@ -272,15 +361,37 @@ async def main() -> None:
         use_local_models=True,
     )
 
-    engine_status = assert_model_backed(controlled_runs, ramdocs_runs)
+    engine_status = assert_model_backed(
+        [*validation_runs, *controlled_runs],
+        ramdocs_runs,
+    )
     comparison = compare_with_fallback(ramdocs_rows, fallback_rows)
     failures = failure_counts(ramdocs_runs)
+    risk_rows = risk_coverage_rows(ramdocs_runs)
 
+    write_csv(output / "validation_calibration_runs.csv", [asdict(row) for row in validation_runs])
+    write_csv(output / "validation_threshold_trials.csv", calibration_trials)
     write_csv(output / "controlled_test_summary.csv", controlled_rows)
     write_csv(output / "controlled_test_runs.csv", [asdict(row) for row in controlled_runs])
     write_csv(output / "ramdocs_summary.csv", ramdocs_rows)
     write_csv(output / "ramdocs_runs.csv", [asdict(row) for row in ramdocs_runs])
     write_csv(output / "comparison_vs_fallback.csv", comparison)
+    write_csv(output / "risk_coverage.csv", risk_rows)
+
+    calibration_payload = {
+        **asdict(calibration),
+        "candidate_thresholds": MODEL_THRESHOLD_CANDIDATES,
+        "validation_case_ids": sorted(validation_ids),
+        "conflict_ratios": CONFLICT_RATIOS,
+        "policy": (
+            "Threshold selected only on controlled validation cases with the "
+            "model-backed retrieval/NLI stack; RAMDocs is not used for tuning."
+        ),
+    }
+    (output / "CALIBRATION.json").write_text(
+        json.dumps(calibration_payload, indent=2),
+        encoding="utf-8",
+    )
 
     model_config = {
         "embedding_model": settings.embedding_model,
@@ -289,8 +400,13 @@ async def main() -> None:
         "evidence_reliability_weight": settings.evidence_reliability_weight,
         "evidence_agreement_weight": settings.evidence_agreement_weight,
         "abstain_threshold": settings.default_abstain_threshold,
+        "source_fallback_abstain_threshold": frozen["abstain_threshold"],
         "ramdocs_samples": len(load_ramdocs(args.ramdocs, limit=args.limit)),
-        "configuration_policy": "Transferred unchanged from the frozen fallback validation run.",
+        "configuration_policy": (
+            "Evidence weights transfer unchanged from the frozen fallback run; "
+            "the abstention threshold is recalibrated only on the pre-declared "
+            "controlled validation split with neural retrieval/NLI."
+        ),
     }
     (output / "MODEL_CONFIG.json").write_text(
         json.dumps(model_config, indent=2),
@@ -304,7 +420,7 @@ async def main() -> None:
     results = [
         "# EvidenceGuard model-backed evaluation",
         "",
-        "This experiment keeps the frozen decision weights unchanged and replaces the fallback retrieval/NLI engines with local neural models.",
+        "This experiment keeps the frozen evidence weights unchanged, uses local neural retrieval/NLI, and calibrates only the abstention threshold on the pre-declared controlled validation split.",
         "",
         "## Model configuration",
         "",
@@ -312,13 +428,21 @@ async def main() -> None:
         json.dumps(model_config, indent=2),
         "~~~",
         "",
+        "## Neural abstention calibration",
+        "",
+        "~~~json",
+        json.dumps(calibration_payload, indent=2),
+        "~~~",
+        "",
+        "The calibration uses forced-answer validation runs so threshold candidates are evaluated from one fixed set of neural predictions. RAMDocs labels are never consulted during calibration.",
+        "",
         "## RAMDocs results",
         "",
         *ramdocs_markdown(ramdocs_rows),
         "",
         "## Difference from frozen fallback run",
         "",
-        "Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are improvements.",
+        "Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are improvements. The model-backed EvidenceGuard row uses its validation-calibrated abstention threshold, while the fallback row retains its own frozen threshold.",
         "",
         *comparison_markdown(comparison),
         "",
@@ -336,19 +460,27 @@ async def main() -> None:
         "",
         "## Interpretation constraints",
         "",
-        "- The model-backed run uses the same evidence weights and abstention threshold as the frozen fallback experiment.",
-        "- No RAMDocs label is passed into retrieval, NLI, scoring, generation, or abstention logic.",
+        "- Evidence-score weights are transferred unchanged from the frozen fallback experiment.",
+        "- The neural abstention threshold is selected only on the pre-declared controlled validation cases.",
+        "- No RAMDocs label is passed into retrieval, NLI, scoring, generation, abstention calibration, or abstention logic.",
         "- Strict correctness requires every listed gold answer and no listed wrong answer after normalized phrase matching.",
-        "- The generator remains the extractive fallback so this run isolates retrieval/NLI changes rather than mixing in an LLM generator.",
+        "- The generator remains the extractive fallback so this run isolates retrieval/NLI and selective-answering changes rather than mixing in an LLM generator.",
+        "- The risk-coverage curve is post-hoc evaluation built from the forced-answer conflict-aware mode; it is not used to choose the threshold.",
         "- The workflow fails if dense retrieval or NLI silently drops to a fallback engine.",
         "",
     ]
     (output / "RESULTS.md").write_text("\n".join(results), encoding="utf-8")
     create_comparison_figure(output, ramdocs_rows, fallback_rows)
+    create_risk_coverage_figure(
+        output,
+        risk_rows,
+        selected_threshold=calibration.abstain_threshold,
+    )
 
     print(json.dumps({
         "output": str(output),
         "model_config": model_config,
+        "calibration": calibration_payload,
         "engine_status": engine_status,
         "failures": failures,
     }, indent=2))

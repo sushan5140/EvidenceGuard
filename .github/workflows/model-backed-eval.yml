@@ -9,6 +9,7 @@ on:
       - "backend/app/services/pipeline.py"
       - "backend/app/research/ramdocs.py"
       - "backend/app/research/benchmark.py"
+      - "backend/app/research/tuning.py"
       - "backend/scripts/run_model_backed_suite.py"
       - ".github/workflows/model-backed-eval.yml"
   workflow_dispatch:
@@ -50,7 +51,9 @@ jobs:
 
       - name: Fetch official RAMDocs test set
         run: |
-          curl --fail --location             https://raw.githubusercontent.com/HanNight/RAMDocs/main/RAMDocs_test.jsonl             --output RAMDocs_test.jsonl
+          curl --fail --location \
+            https://raw.githubusercontent.com/HanNight/RAMDocs/main/RAMDocs_test.jsonl \
+            --output RAMDocs_test.jsonl
           test -s RAMDocs_test.jsonl
           sha256sum RAMDocs_test.jsonl | tee RAMDocs_test.sha256
 
@@ -59,7 +62,11 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          python scripts/run_model_backed_suite.py             --ramdocs ../RAMDocs_test.jsonl             --frozen-config ../research/results/frozen/frozen_config.json             --fallback-summary ../research/results/frozen/ramdocs_summary.csv             --output ../research/results/model_backed
+          python scripts/run_model_backed_suite.py \
+            --ramdocs ../RAMDocs_test.jsonl \
+            --frozen-config ../research/results/frozen/frozen_config.json \
+            --fallback-summary ../research/results/frozen/ramdocs_summary.csv \
+            --output ../research/results/model_backed
 
       - name: Record provenance
         run: |

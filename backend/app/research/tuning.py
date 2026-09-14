@@ -18,6 +18,17 @@ class FrozenConfig:
     validation_coverage: float
 
 
+@dataclass(slots=True)
+class ThresholdCalibration:
+    abstain_threshold: float
+    validation_score: float
+    validation_utility: float
+    validation_coverage: float
+    validation_selective_accuracy: float
+    answered: int
+    samples: int
+
+
 WEIGHT_CANDIDATES = [
     (0.50, 0.20, 0.30),
     (0.45, 0.25, 0.30),
@@ -26,6 +37,18 @@ WEIGHT_CANDIDATES = [
     (0.50, 0.30, 0.20),
 ]
 THRESHOLD_CANDIDATES = [0.35, 0.40, 0.45, 0.50, 0.55, 0.60]
+MODEL_THRESHOLD_CANDIDATES = [
+    0.20,
+    0.25,
+    0.30,
+    0.35,
+    0.40,
+    0.45,
+    0.50,
+    0.55,
+    0.60,
+    0.65,
+]
 
 
 def _utility(records: list[RunRecord]) -> float:
@@ -69,6 +92,84 @@ def _coverage(records: list[RunRecord]) -> float:
     return sum(not record.abstained for record in records) / len(records)
 
 
+def calibrate_abstention_threshold_from_records(
+    records: list[RunRecord],
+    *,
+    candidates: list[float] | None = None,
+    minimum_coverage: float = 0.40,
+) -> tuple[ThresholdCalibration, list[dict]]:
+    """Tune only the abstention threshold from forced-answer validation runs.
+
+    records should come from EvidenceGuard with the abstention threshold set to
+    zero so correctness and confidence are observed before selective answering.
+    The function performs no model inference and therefore can sweep many
+    thresholds without changing retrieval or NLI outputs.
+    """
+
+    if not records:
+        raise ValueError("threshold calibration requires at least one validation record")
+
+    thresholds = candidates or MODEL_THRESHOLD_CANDIDATES
+    trials: list[dict] = []
+
+    for threshold in thresholds:
+        answered = [record for record in records if record.confidence >= threshold]
+        abstained_count = len(records) - len(answered)
+        correct_answered = sum(record.correct for record in answered)
+        wrong_answered = len(answered) - correct_answered
+
+        utility = (
+            correct_answered * 1.0
+            + abstained_count * 0.20
+            - wrong_answered * 1.0
+        ) / len(records)
+        coverage = len(answered) / len(records)
+        selective_accuracy = (
+            correct_answered / len(answered)
+            if answered
+            else 0.0
+        )
+
+        low_coverage_penalty = max(0.0, minimum_coverage - coverage) * 0.50
+        score = utility - low_coverage_penalty
+
+        trials.append(
+            {
+                "abstain_threshold": threshold,
+                "validation_utility": round(utility, 6),
+                "validation_coverage": round(coverage, 6),
+                "validation_selective_accuracy": round(selective_accuracy, 6),
+                "validation_score": round(score, 6),
+                "answered": len(answered),
+                "samples": len(records),
+            }
+        )
+
+    trials.sort(
+        key=lambda row: (
+            row["validation_score"],
+            row["validation_utility"],
+            row["validation_selective_accuracy"],
+            row["validation_coverage"],
+            -row["abstain_threshold"],
+        ),
+        reverse=True,
+    )
+    best = trials[0]
+    return (
+        ThresholdCalibration(
+            abstain_threshold=best["abstain_threshold"],
+            validation_score=best["validation_score"],
+            validation_utility=best["validation_utility"],
+            validation_coverage=best["validation_coverage"],
+            validation_selective_accuracy=best["validation_selective_accuracy"],
+            answered=best["answered"],
+            samples=best["samples"],
+        ),
+        trials,
+    )
+
+
 async def tune_on_controlled_validation(
     settings: Settings,
     *,
@@ -99,9 +200,6 @@ async def tune_on_controlled_validation(
             ece = _ece(records)
             coverage = _coverage(records)
 
-            # Pre-registered engineering objective:
-            # prefer correct > abstain > wrong, penalize poor calibration,
-            # and discourage degenerate near-total abstention.
             low_coverage_penalty = max(0.0, 0.40 - coverage) * 0.50
             score = utility - 0.15 * ece - low_coverage_penalty
 
