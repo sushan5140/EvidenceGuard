@@ -1,0 +1,37 @@
+{
+  "abstain_threshold": 0.2,
+  "validation_score": 0.866667,
+  "validation_utility": 0.866667,
+  "validation_coverage": 1.0,
+  "validation_selective_accuracy": 0.933333,
+  "answered": 30,
+  "samples": 30,
+  "candidate_thresholds": [
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65
+  ],
+  "validation_case_ids": [
+    "apollo_11",
+    "c_creator",
+    "gold_symbol",
+    "japan_capital",
+    "python_creator",
+    "solar_system"
+  ],
+  "conflict_ratios": [
+    0.0,
+    0.1,
+    0.25,
+    0.5,
+    0.75
+  ],
+  "policy": "Threshold selected only on controlled validation cases with the model-backed retrieval/NLI stack; RAMDocs is not used for tuning."
+}

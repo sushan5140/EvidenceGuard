@@ -29,7 +29,7 @@ water_boiling,basic_rag,0.75,0.75,False,False,1.0,True,False,bm25,disabled-by-ba
 mount_everest,basic_rag,0.75,0.75,False,False,1.0,True,False,bm25,disabled-by-baseline
 heart_chambers,basic_rag,0.75,0.75,True,False,1.0,True,False,bm25,disabled-by-baseline
 red_planet,basic_rag,0.75,0.75,False,False,0.7792,True,False,bm25,disabled-by-baseline
-eiffel_opening,hybrid_rag,0.0,0.0,True,False,0.9399,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2,disabled-by-baseline
+eiffel_opening,hybrid_rag,0.0,0.0,True,False,0.9399,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,disabled-by-baseline
 australia_capital,hybrid_rag,0.0,0.0,True,False,0.55,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,disabled-by-baseline
 water_boiling,hybrid_rag,0.0,0.0,True,False,0.7494,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,disabled-by-baseline
 mount_everest,hybrid_rag,0.0,0.0,True,False,0.55,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,disabled-by-baseline
@@ -59,7 +59,7 @@ water_boiling,hybrid_rag,0.75,0.75,True,False,0.7907,True,False,sentence-transfo
 mount_everest,hybrid_rag,0.75,0.75,True,False,0.7816,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,disabled-by-baseline
 heart_chambers,hybrid_rag,0.75,0.75,True,False,1.0,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,disabled-by-baseline
 red_planet,hybrid_rag,0.75,0.75,False,False,0.6256,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,disabled-by-baseline
-eiffel_opening,conflict_aware,0.0,0.0,True,False,0.9927,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768
+eiffel_opening,conflict_aware,0.0,0.0,True,False,0.9927,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 australia_capital,conflict_aware,0.0,0.0,True,False,0.7962,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 water_boiling,conflict_aware,0.0,0.0,True,False,0.9033,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 mount_everest,conflict_aware,0.0,0.0,True,False,0.8024,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
@@ -118,4 +118,4 @@ australia_capital,evidenceguard,0.75,0.75,True,False,0.8018,True,True,sentence-t
 water_boiling,evidenceguard,0.75,0.75,True,False,0.6952,True,True,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
 mount_everest,evidenceguard,0.75,0.75,True,False,0.6912,True,True,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
 heart_chambers,evidenceguard,0.75,0.75,True,False,0.8309,True,True,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
-red_planet,evidenceguard,0.75,0.75,False,True,0.5857,True,True,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
+red_planet,evidenceguard,0.75,0.75,True,False,0.5857,True,True,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache

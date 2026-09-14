@@ -1,13 +1,13 @@
 {
   "retrieval_engines": {
     "sentence-transformers:sentence-transformers/all-MiniLM-L6-v2": 1,
-    "sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached": 529,
+    "sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached": 559,
     "sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache": 1060
   },
   "nli_engines": {
     "transformers:cross-encoder/nli-MiniLM2-L6-H768": 1,
-    "transformers:cross-encoder/nli-MiniLM2-L6-H768:cached": 493,
-    "transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache": 512,
+    "transformers:cross-encoder/nli-MiniLM2-L6-H768:cached": 515,
+    "transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache": 520,
     "not-loaded": 54
   }
 }
