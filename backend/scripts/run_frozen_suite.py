@@ -54,15 +54,15 @@ def controlled_markdown(rows: list[dict]) -> list[str]:
 
 def ramdocs_markdown(rows: list[dict]) -> list[str]:
     lines = [
-        "| Mode | Samples | Strict accuracy | All-gold hit | Any-gold hit | Wrong-answer hit | Abstention | Mean conf. | ECE | Conflict F1 |",
+        "| Mode | Samples | Strict acc. | Selective acc. | Coverage | Wrong-answer | Wrong among answered | Abstention | ECE | Conflict F1 |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows:
         lines.append(
             f"| {row['mode']} | {row['samples']} | {pct(row['strict_accuracy'])} | "
-            f"{pct(row['all_gold_hit_rate'])} | {pct(row['any_gold_hit_rate'])} | "
-            f"{pct(row['wrong_answer_rate'])} | {pct(row['abstention_rate'])} | "
-            f"{pct(row['mean_confidence'])} | {row['ece_strict']:.3f} | "
+            f"{pct(row['selective_strict_accuracy'])} | {pct(row['coverage'])} | "
+            f"{pct(row['wrong_answer_rate'])} | {pct(row['wrong_answer_among_answered'])} | "
+            f"{pct(row['abstention_rate'])} | {row['ece_strict']:.3f} | "
             f"{row['conflict_f1']:.3f} |"
         )
     return lines
@@ -148,7 +148,8 @@ def failure_analysis(ramdocs_path: Path, runs: list, output: Path) -> dict:
         "conflict_misses": [
             run for run in eg if run.conflict_expected and not run.conflict_detected
         ],
-        "improvements_over_hybrid": [],
+        "strict_improvements_over_hybrid": [],
+        "wrong_answer_harm_avoided": [],
         "regressions_vs_hybrid": [],
     }
 
@@ -156,8 +157,10 @@ def failure_analysis(ramdocs_path: Path, runs: list, output: Path) -> dict:
         full = by_mode_index.get(("evidenceguard", base.index))
         if full is None:
             continue
-        if (not base.strict_correct) and (full.strict_correct or full.abstained):
-            categories["improvements_over_hybrid"].append(full)
+        if (not base.strict_correct) and full.strict_correct:
+            categories["strict_improvements_over_hybrid"].append(full)
+        if base.wrong_answer_hit and not full.wrong_answer_hit:
+            categories["wrong_answer_harm_avoided"].append(full)
         if base.strict_correct and not full.strict_correct:
             categories["regressions_vs_hybrid"].append(full)
 
@@ -205,7 +208,8 @@ def failure_analysis(ramdocs_path: Path, runs: list, output: Path) -> dict:
 
     examples("Wrong-answer adoption", categories["wrong_answer_hits"])
     examples("Conflict misses", categories["conflict_misses"])
-    examples("Cases improved relative to Hybrid RAG", categories["improvements_over_hybrid"])
+    examples("Strict improvements relative to Hybrid RAG", categories["strict_improvements_over_hybrid"])
+    examples("Wrong-answer harm avoided relative to Hybrid RAG", categories["wrong_answer_harm_avoided"])
     examples("Regressions relative to Hybrid RAG", categories["regressions_vs_hybrid"])
 
     (output / "FAILURE_ANALYSIS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -242,7 +246,7 @@ async def main() -> None:
     frozen_payload = {
         **asdict(frozen),
         "protocol": {
-            "suite": "controlled-conflicts-v2",
+            "suite": "controlled-conflicts-v3-strict",
             "validation_case_ids": sorted(validation_ids),
             "heldout_test_case_ids": sorted(test_ids),
             "conflict_ratios": CONFLICT_RATIOS,
@@ -316,6 +320,8 @@ async def main() -> None:
         "- Controlled tuning uses only validation cases; the listed controlled results use held-out case IDs.",
         "- RAMDocs labels are not used as inference features and are never used for tuning.",
         "- RAMDocs strict correctness requires all listed gold answers and zero listed wrong answers after normalized phrase matching.",
+        "- Selective strict accuracy is computed only over answered cases; coverage reports the answered fraction.",
+        "- Wrong-answer-among-answered separates abstention from harmful answered outputs.",
         "- This is a transparent adapter metric, not a claim of byte-for-byte equivalence with the paper's official evaluator.",
         "- This frozen run intentionally uses deterministic fallback retrieval and heuristic NLI for reproducibility on CI.",
         "- Model-backed experiments should be reported as a separate run rather than silently replacing these results.",

@@ -59,7 +59,12 @@ def load_ramdocs(path: str | Path, *, limit: int | None = None) -> list[RAMDocsC
     return cases
 
 
-def _answer_flags(answer: str, case: RAMDocsCase, *, abstained: bool) -> tuple[bool, bool, bool, bool]:
+def _answer_flags(
+    answer: str,
+    case: RAMDocsCase,
+    *,
+    abstained: bool,
+) -> tuple[bool, bool, bool, bool]:
     if abstained:
         return False, False, False, False
 
@@ -155,6 +160,8 @@ async def run_ramdocs(
         subset = [run for run in runs if run.mode == mode]
         if not subset:
             continue
+
+        answered = [run for run in subset if not run.abstained]
         conflict = binary_metrics(
             [run.conflict_expected for run in subset],
             [run.conflict_detected for run in subset],
@@ -166,6 +173,10 @@ async def run_ramdocs(
                 "strict_accuracy": round(
                     sum(run.strict_correct for run in subset) / len(subset), 4
                 ),
+                "selective_strict_accuracy": round(
+                    sum(run.strict_correct for run in answered) / len(answered), 4
+                ) if answered else 0.0,
+                "coverage": round(len(answered) / len(subset), 4),
                 "all_gold_hit_rate": round(
                     sum(run.all_gold_hit for run in subset) / len(subset), 4
                 ),
@@ -175,6 +186,9 @@ async def run_ramdocs(
                 "wrong_answer_rate": round(
                     sum(run.wrong_answer_hit for run in subset) / len(subset), 4
                 ),
+                "wrong_answer_among_answered": round(
+                    sum(run.wrong_answer_hit for run in answered) / len(answered), 4
+                ) if answered else 0.0,
                 "abstention_rate": round(
                     sum(run.abstained for run in subset) / len(subset), 4
                 ),
