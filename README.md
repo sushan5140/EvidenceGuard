@@ -22,13 +22,13 @@ V2 adds a reproducible research layer on top of the working application:
 
 ## Research modes
 
-| Mode | Retrieval | Conflict reasoning | Reliability/agreement scoring | Abstention |
-|---|---|---|---|---|
-| `basic_rag` | BM25 | No | No | No |
-| `hybrid_rag` | BM25 + semantic | No | No | No |
-| `conflict_aware` | BM25 + semantic | Yes | Yes | No |
-| `consensus_rag` | BM25 + semantic | Yes | Yes + contradiction-pruned answer selection | No |
-| `evidenceguard` | BM25 + semantic | Yes | Yes + contradiction-pruned answer selection | Yes |
+| Mode | Retrieval | Conflict reasoning | Evidence scoring | Answer selection | Abstention |
+|---|---|---|---|---|---|
+| `basic_rag` | BM25 | No | No | Raw ranked | No |
+| `hybrid_rag` | BM25 + semantic | No | No | Raw ranked | No |
+| `conflict_aware` | BM25 + semantic | Yes | Yes | Raw ranked | No |
+| `consensus_rag` | BM25 + semantic | Yes | Yes | Contradiction-pruned | No |
+| `evidenceguard` | BM25 + semantic | Yes | Yes | Raw ranked | Yes |
 
 These modes let the final report measure what each added mechanism contributes.
 

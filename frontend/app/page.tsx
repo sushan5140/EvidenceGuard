@@ -335,7 +335,7 @@ export default function Home() {
                 {mode === "hybrid_rag" && "Hybrid retrieval; no explicit conflict reasoning or abstention."}
                 {mode === "conflict_aware" && "Hybrid retrieval + conflict scoring; raw top-ranked evidence is forced into the answer."}
                 {mode === "consensus_rag" && "Conflict-aware scoring + contradiction-pruned consensus selection; forced to answer."}
-                {mode === "evidenceguard" && "Consensus-selected evidence plus validation-calibrated selective abstention."}
+                {mode === "evidenceguard" && "Conflict-aware scoring plus validation-calibrated selective abstention; consensus pruning remains a separate ablation."}
               </p>
             </div>
             <textarea

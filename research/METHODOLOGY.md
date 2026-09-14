@@ -13,10 +13,10 @@ EvidenceGuard decomposes RAG into auditable stages:
 3. **Cross-source NLI** — claims are classified as supporting, contradictory, or neutral.
 4. **Evidence graph** — claims become nodes and NLI relations become edges.
 5. **Evidence scoring** — retrieval relevance, source reliability, and agreement are combined.
-6. **Consensus selection** — strongly contradictory claims are prevented from coexisting in the final answer evidence set.
+6. **Optional consensus selection (ablation)** — a separately measured variant prunes strongly contradictory claims before answer assembly.
 7. **Uncertainty decision** — confidence is penalized by conflict density.
-8. **Abstention** — the full system may decline to answer below a frozen threshold.
-9. **Grounded generation** — optional LLM generation receives only the selected evidence set.
+8. **Abstention** — the full EvidenceGuard mode may decline to answer below a frozen threshold.
+9. **Grounded generation** — optional LLM generation receives the active mode's ranked evidence set.
 
 ## Implemented ablations
 
@@ -25,10 +25,10 @@ The repository exposes five modes using the same corpus/question:
 1. **basic_rag** — BM25 retrieval only; no explicit conflict handling.
 2. **hybrid_rag** — BM25 + semantic retrieval; no explicit conflict handling.
 3. **conflict_aware** — hybrid retrieval + NLI + evidence scoring, forced to answer from raw top-ranked evidence.
-4. **consensus_rag** — conflict-aware scoring + contradiction-pruned consensus selection, forced to answer.
-5. **evidenceguard** — consensus-selected evidence + validation-calibrated abstention.
+4. **consensus_rag** — conflict-aware scoring + contradiction-pruned consensus selection, forced to answer as a side ablation.
+5. **evidenceguard** — conflict-aware scoring + validation-calibrated abstention, without consensus pruning.
 
-This isolates the contribution of retrieval, conflict reasoning/scoring, consensus answer assembly, and abstention.
+This isolates retrieval, conflict reasoning/scoring, consensus answer assembly as a side ablation, and selective abstention without baking a losing component into the final system.
 
 ## Controlled conflict experiment
 
