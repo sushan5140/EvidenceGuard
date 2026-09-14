@@ -71,7 +71,7 @@ def aggregate_predictions(
             for item in unique
         ]
         mean_weighted = sum(weighted) / len(weighted)
-        support_bonus = min(0.20, 0.07 * math.log2(1 + len(unique)))
+        support_bonus = min(0.25, 0.10 * math.log2(1 + len(unique)))
         score = mean_weighted + support_bonus
 
         representative = max(
