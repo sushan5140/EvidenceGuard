@@ -1,41 +1,43 @@
 # EvidenceGuard
 
-**A conflict-aware Retrieval-Augmented Generation (RAG) system for reliable question answering.**
+**Conflict-aware Retrieval-Augmented Generation (RAG) for reliable question answering.**
 
-EvidenceGuard is a final-year AI/Computer Science research prototype that asks a harder question than ordinary RAG:
+EvidenceGuard is a final-year AI/Computer Science research prototype built around one question:
 
-> What should an AI do when its retrieved sources disagree?
+> What should a RAG system do when its retrieved sources disagree?
 
-Instead of merging retrieved text into one prompt and hoping the LLM resolves it correctly, EvidenceGuard extracts claims, compares evidence across sources, builds a support/contradiction graph, scores evidence quality, estimates uncertainty, and can **abstain** when the evidence is too weak or conflicted.
+Instead of merging retrieved text into one prompt, EvidenceGuard retrieves evidence, extracts claims, detects support/contradiction relationships, scores evidence quality, estimates uncertainty, and can **abstain** when the evidence is too weak or conflicted.
 
-## Research question
+## V2 status
 
-**Can explicit conflict detection, evidence reliability scoring, and uncertainty-aware abstention make RAG systems more robust when retrieved documents contain contradictory or misleading information?**
+V2 adds a reproducible research layer on top of the working application:
 
-## Implemented features
+- four switchable system modes / ablations
+- 0/10/25/50/75% controlled conflict sweeps
+- accuracy, selective accuracy, coverage, abstention rate, ECE, and conflict F1
+- CSV + JSON + Markdown experiment exports
+- in-app benchmark matrix
+- RAMDocs external-benchmark adapter
+- tests + GitHub Actions CI
 
-- **Hybrid retrieval** — BM25 + semantic retrieval.
-- **Laptop-friendly fallback** — TF-IDF/lexical retrieval if local embedding models are unavailable.
-- **Claim extraction** — deterministic atomic-ish claim decomposition.
-- **Natural Language Inference** — transformer NLI with a deterministic fallback.
-- **Evidence Conflict Graph** — support and contradiction relationships across independent sources.
-- **Composite evidence scoring** — combines retrieval, source reliability, and agreement.
-- **Confidence + abstention** — confidence decreases as meaningful contradictions increase.
-- **Grounded answer generation** — optional OpenAI-compatible LLM; extractive fallback requires no API key.
-- **PDF/text ingestion**.
-- **Controlled misinformation injection**.
-- **Baseline vs attacked experiment endpoint**.
-- **Research dashboard** showing confidence, evidence scores, conflicts, model status, and adversarial experiments.
-- **Docker Compose** and **GitHub Actions CI**.
+## Research modes
 
-## Architecture
+| Mode | Retrieval | Conflict reasoning | Reliability/agreement scoring | Abstention |
+|---|---|---|---|---|
+| `basic_rag` | BM25 | No | No | No |
+| `hybrid_rag` | BM25 + semantic | No | No | No |
+| `conflict_aware` | BM25 + semantic | Yes | Yes | No |
+| `evidenceguard` | BM25 + semantic | Yes | Yes | Yes |
+
+These modes let the final report measure what each added mechanism contributes.
+
+## Core pipeline
 
 ```text
 Question
    |
    v
-Hybrid Retrieval
-(BM25 + Semantic)
+Retrieval (BM25 / Hybrid)
    |
    v
 Claim Extraction
@@ -56,55 +58,35 @@ Confidence Estimation
    |------------------|
    v                  v
 Answer             Abstain
-   |
-   v
-Citations + Evidence Inspector
 ```
 
-## Repository structure
+## Implemented features
 
-```text
-EvidenceGuard/
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── config.py
-│   │   ├── schemas.py
-│   │   ├── demo.py
-│   │   └── services/
-│   │       ├── chunking.py
-│   │       ├── retrieval.py
-│   │       ├── nli.py
-│   │       ├── scoring.py
-│   │       ├── generator.py
-│   │       ├── pipeline.py
-│   │       └── store.py
-│   ├── tests/
-│   └── requirements.txt
-├── frontend/
-│   ├── app/
-│   └── lib/
-├── research/
-│   └── METHODOLOGY.md
-├── docker-compose.yml
-└── .github/workflows/ci.yml
-```
+- hybrid BM25 + semantic retrieval
+- TF-IDF/lexical laptop fallback
+- deterministic claim extraction
+- transformer NLI + heuristic fallback
+- support/contradiction evidence graph
+- source-reliability and agreement scoring
+- confidence estimation + abstention
+- optional OpenAI-compatible grounded generation
+- PDF/text ingestion
+- controlled misinformation injection
+- adversarial before/after experiment
+- research-mode selector in the dashboard
+- controlled benchmark matrix in the dashboard
+- benchmark CLI with report-ready outputs
+- RAMDocs adapter with label-leakage protection
+- Docker Compose
+- GitHub Actions CI
 
 ## Quick start
-
-### 1. Clone and configure
 
 ```bash
 git clone https://github.com/sushan5140/EvidenceGuard.git
 cd EvidenceGuard
 cp .env.example .env
-```
 
-No LLM key is required for the first run.
-
-### 2. Start the backend
-
-```bash
 python -m venv .venv
 # Windows:
 .venv\Scripts\activate
@@ -112,19 +94,22 @@ python -m venv .venv
 # source .venv/bin/activate
 
 pip install -r backend/requirements.txt
+```
+
+Start the backend:
+
+```bash
 PYTHONPATH=backend uvicorn app.main:app --reload --port 8000
 ```
 
-On Windows PowerShell, use:
+Windows PowerShell:
 
 ```powershell
 $env:PYTHONPATH="backend"
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. Start the frontend
-
-In another terminal:
+Start the frontend:
 
 ```bash
 cd frontend
@@ -132,29 +117,62 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:3000**.
+Open **http://localhost:3000**. FastAPI docs are at **http://localhost:8000/docs**.
 
-### 4. Load the built-in conflict demo
+## Controlled benchmark
 
-Click **Load demo evidence** in the UI, then ask:
+The built-in suite contains six factual QA cases and generates ten evidence documents per case at each requested conflict level.
 
-> When did the Eiffel Tower open to the public?
+From the UI, click **Run 4 × 5 benchmark**.
 
-The demo includes two mutually supporting sources and one low-reliability source containing a conflicting date.
+For report artifacts:
 
-## Optional LLM generation
-
-EvidenceGuard accepts any provider exposing an OpenAI-compatible `/chat/completions` endpoint.
-
-In `.env`:
-
-```env
-LLM_API_BASE=https://your-provider.example/v1
-LLM_API_KEY=your-key
-LLM_MODEL=your-model
+```bash
+cd backend
+PYTHONPATH=. python scripts/run_benchmark.py
 ```
 
-Without these variables, EvidenceGuard returns a deterministic extractive answer, so retrieval/conflict experiments remain reproducible.
+Outputs:
+
+```text
+research/results/
+├── report.json
+├── summary.csv
+├── runs.csv
+└── REPORT.md
+```
+
+Enable local embedding/NLI models for the final run:
+
+```bash
+PYTHONPATH=. python scripts/run_benchmark.py --local-models --nli
+```
+
+## External benchmark: RAMDocs
+
+EvidenceGuard includes an adapter for the public **RAMDocs** benchmark from *Retrieval-Augmented Generation with Conflicting Evidence* (COLM 2025).
+
+Official dataset sources:
+
+- https://github.com/HanNight/RAMDocs
+- https://huggingface.co/datasets/HanNight/RAMDocs
+
+After obtaining `RAMDocs_test.jsonl`:
+
+```bash
+cd backend
+PYTHONPATH=. python scripts/run_ramdocs.py /path/to/RAMDocs_test.jsonl
+```
+
+Quick smoke test:
+
+```bash
+PYTHONPATH=. python scripts/run_ramdocs.py /path/to/RAMDocs_test.jsonl --limit 25 --fallback-only --heuristic-nli
+```
+
+RAMDocs `correct` / `misinfo` / `noise` labels are used **only for evaluation**. They are not passed into retrieval or scoring, which avoids label leakage.
+
+See [research/EXTERNAL_BENCHMARKS.md](research/EXTERNAL_BENCHMARKS.md).
 
 ## API
 
@@ -162,20 +180,33 @@ Without these variables, EvidenceGuard returns a deterministic extractive answer
 |---|---|---|
 | GET | `/api/health` | Runtime/model status |
 | GET | `/api/documents` | List indexed sources |
-| POST | `/api/documents` | Add a text source |
+| POST | `/api/documents` | Add text evidence |
 | POST | `/api/documents/file` | Ingest PDF/text |
 | DELETE | `/api/documents/{id}` | Delete a source |
-| POST | `/api/query` | Run EvidenceGuard |
+| POST | `/api/query` | Run any research mode |
 | POST | `/api/inject` | Add synthetic conflicting evidence |
 | DELETE | `/api/inject` | Remove injected evidence |
-| POST | `/api/experiments/attack` | Compare clean vs attacked corpus |
+| POST | `/api/experiments/attack` | Clean-vs-attacked comparison |
+| POST | `/api/benchmarks/controlled` | Run controlled benchmark matrix |
 | POST | `/api/demo/load` | Load demonstration corpus |
 
-FastAPI docs are available at **http://localhost:8000/docs**.
+## V2 metrics
 
-## Current scoring model
+The controlled benchmark reports:
 
-The v1 evidence score is:
+- answer accuracy
+- selective accuracy (accuracy among answered questions)
+- coverage
+- abstention rate
+- mean confidence
+- Expected Calibration Error (ECE)
+- query-level conflict precision / recall / F1
+
+RAMDocs additionally reports gold-answer hit rate and wrong-answer rate.
+
+## Scoring model
+
+The current engineering score is:
 
 ```text
 EvidenceScore =
@@ -184,42 +215,24 @@ EvidenceScore =
 + 0.30 * cross-source agreement
 ```
 
-These are **initial engineering weights, not research conclusions**. For a dissertation/final report, tune them on a validation split and freeze them before evaluating the test set.
+These are initial engineering weights, **not research conclusions**. Tune them only on a validation split and freeze them before final test evaluation.
 
-Confidence is based on top evidence scores with an explicit penalty for contradiction density. The abstention threshold is configurable.
+## Research documentation
 
-## Final-year evaluation plan
-
-Compare:
-
-1. basic RAG
-2. hybrid RAG
-3. hybrid RAG + conflict detection
-4. EvidenceGuard without abstention
-5. full EvidenceGuard
-
-Then inject contradictory evidence at increasing ratios and evaluate:
-
-- answer accuracy
-- conflict-detection precision/recall/F1
-- unsupported claim rate
-- citation support
-- calibration
-- abstention precision/recall
-- selective accuracy
-
-See [research/METHODOLOGY.md](research/METHODOLOGY.md) for the complete experiment design.
+- [Methodology](research/METHODOLOGY.md)
+- [External benchmarks](research/EXTERNAL_BENCHMARKS.md)
 
 ## Important limitations
 
-This is a research prototype, not a production truth engine.
+This is a research prototype, not a universal truth engine.
 
-- Source reliability currently comes from metadata supplied at ingestion.
-- The fallback claim extractor is deterministic rather than a trained claim-decomposition model.
-- NLI can misclassify subtle temporal, numerical, or contextual disagreements.
-- A confidence score is an internal system score; it must not be interpreted as a universal probability that an answer is true.
-- Real evaluation requires a labeled benchmark and frozen validation/test protocol.
+- source reliability is currently ingestion metadata
+- deterministic claim extraction can miss complex propositions
+- NLI may misclassify subtle temporal/numeric/contextual conflicts
+- confidence is an internal system score, not a universal probability of truth
+- controlled benchmark results are synthetic and must be reported separately from RAMDocs
+- external claims should be based on frozen held-out evaluation, not demo examples
 
 ## License
 
-Add the license required by your university/team before public release or final submission.
+Add the license required by your university/team before final submission.

@@ -12,5 +12,7 @@ backend/data/*.json
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+research/results/
+backend/research/results/
 .DS_Store
 *.log
