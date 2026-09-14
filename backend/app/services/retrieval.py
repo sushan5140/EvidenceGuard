@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import math
 import re
 from dataclasses import dataclass
@@ -46,6 +47,7 @@ class HybridRetriever:
     """
 
     _MODEL_CACHE: ClassVar[dict[str, Any]] = {}
+    _SCORE_CACHE: ClassVar[dict[str, np.ndarray]] = {}
 
     def __init__(
         self,
@@ -114,12 +116,30 @@ class HybridRetriever:
         self.engine_status = f"sentence-transformers:{self.embedding_model_name}"
         return model
 
+    def _dense_cache_key(self, question: str, chunks: list[Chunk]) -> str:
+        digest = hashlib.sha1()
+        digest.update(self.embedding_model_name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(question.encode("utf-8"))
+        for chunk in chunks:
+            digest.update(b"\0")
+            digest.update(chunk.text.encode("utf-8"))
+        return digest.hexdigest()
+
     def _dense(self, question: str, chunks: list[Chunk]) -> np.ndarray:
         if not chunks:
             return np.array([], dtype=float)
 
         if self.enable_local_models:
             try:
+                cache_key = self._dense_cache_key(question, chunks)
+                cached_scores = self._SCORE_CACHE.get(cache_key)
+                if cached_scores is not None:
+                    self.engine_status = (
+                        f"sentence-transformers:{self.embedding_model_name}:score-cache"
+                    )
+                    return cached_scores.copy()
+
                 model = self._load_embedding_model()
                 texts = [question, *[chunk.text for chunk in chunks]]
                 vectors = model.encode(
@@ -130,7 +150,12 @@ class HybridRetriever:
                 )
                 q = np.asarray(vectors[0], dtype=float)
                 matrix = np.asarray(vectors[1:], dtype=float)
-                return matrix @ q
+                scores = matrix @ q
+
+                if len(self._SCORE_CACHE) >= 4096:
+                    self._SCORE_CACHE.pop(next(iter(self._SCORE_CACHE)))
+                self._SCORE_CACHE[cache_key] = np.asarray(scores, dtype=float)
+                return scores
             except Exception as exc:
                 self.engine_status = f"tfidf-fallback:{type(exc).__name__}"
 

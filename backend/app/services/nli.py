@@ -26,6 +26,7 @@ class NLIEngine:
     """Pairwise NLI with process-wide model caching and batched inference."""
 
     _MODEL_CACHE: ClassVar[dict[str, tuple[Any, Any]]] = {}
+    _RELATION_CACHE: ClassVar[dict[tuple[str, str, str], Relation]] = {}
 
     def __init__(self, model_name: str, *, enabled: bool = True, batch_size: int = 32):
         self.model_name = model_name
@@ -139,10 +140,31 @@ class NLIEngine:
     ) -> list[Relation]:
         if not pairs:
             return []
+
         if use_model:
-            model_results = self._model_relations(pairs)
+            keys = [(self.model_name, left, right) for left, right in pairs]
+            resolved: list[Relation | None] = [
+                self._RELATION_CACHE.get(key) for key in keys
+            ]
+            missing_indices = [
+                index for index, relation in enumerate(resolved) if relation is None
+            ]
+
+            if not missing_indices:
+                self.status = f"transformers:{self.model_name}:relation-cache"
+                return [relation for relation in resolved if relation is not None]
+
+            missing_pairs = [pairs[index] for index in missing_indices]
+            model_results = self._model_relations(missing_pairs)
             if model_results is not None:
-                return model_results
+                for index, relation in zip(missing_indices, model_results):
+                    key = keys[index]
+                    if len(self._RELATION_CACHE) >= 100000:
+                        self._RELATION_CACHE.pop(next(iter(self._RELATION_CACHE)))
+                    self._RELATION_CACHE[key] = relation
+                    resolved[index] = relation
+                return [relation for relation in resolved if relation is not None]
+
         if self.status == "not-loaded":
             self.status = "heuristic"
         return [self._heuristic(left, right) for left, right in pairs]
