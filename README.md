@@ -12,7 +12,7 @@ Instead of merging retrieved text into one prompt, EvidenceGuard retrieves evide
 
 V2 adds a reproducible research layer on top of the working application:
 
-- four switchable system modes / ablations
+- five switchable system modes / ablations
 - 0/10/25/50/75% controlled conflict sweeps
 - accuracy, selective accuracy, coverage, abstention rate, ECE, and conflict F1
 - CSV + JSON + Markdown experiment exports
@@ -27,7 +27,8 @@ V2 adds a reproducible research layer on top of the working application:
 | `basic_rag` | BM25 | No | No | No |
 | `hybrid_rag` | BM25 + semantic | No | No | No |
 | `conflict_aware` | BM25 + semantic | Yes | Yes | No |
-| `evidenceguard` | BM25 + semantic | Yes | Yes | Yes |
+| `consensus_rag` | BM25 + semantic | Yes | Yes + contradiction-pruned answer selection | No |
+| `evidenceguard` | BM25 + semantic | Yes | Yes + contradiction-pruned answer selection | Yes |
 
 These modes let the final report measure what each added mechanism contributes.
 
@@ -68,6 +69,7 @@ Answer             Abstain
 - transformer NLI + heuristic fallback
 - support/contradiction evidence graph
 - source-reliability and agreement scoring
+- contradiction-pruned consensus answer selection
 - confidence estimation + abstention
 - optional OpenAI-compatible grounded generation
 - PDF/text ingestion
@@ -123,7 +125,7 @@ Open **http://localhost:3000**. FastAPI docs are at **http://localhost:8000/docs
 
 The built-in suite contains six factual QA cases and generates ten evidence documents per case at each requested conflict level.
 
-From the UI, click **Run 4 × 5 benchmark**.
+From the UI, click **Run 5 × 5 benchmark**.
 
 For report artifacts:
 
@@ -210,12 +212,12 @@ The current engineering score is:
 
 ```text
 EvidenceScore =
-  0.45 * retrieval relevance
-+ 0.25 * source reliability
-+ 0.30 * cross-source agreement
+  0.50 * retrieval relevance
++ 0.30 * source reliability
++ 0.20 * cross-source agreement
 ```
 
-These are initial engineering weights, **not research conclusions**. Tune them only on a validation split and freeze them before final test evaluation.
+These are the currently frozen engineering weights selected by the repository's validation protocol, **not universal research conclusions**. Any future retuning must use validation data only and remain frozen for held-out evaluation.
 
 ## Research documentation
 

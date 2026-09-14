@@ -65,7 +65,7 @@ export const api = {
     request<BenchmarkResponse>("/api/benchmarks/controlled", {
       method: "POST",
       body: JSON.stringify({
-        modes: ["basic_rag", "hybrid_rag", "conflict_aware", "evidenceguard"],
+        modes: ["basic_rag", "hybrid_rag", "conflict_aware", "consensus_rag", "evidenceguard"],
         conflict_ratios: [0, 0.1, 0.25, 0.5, 0.75],
         use_nli: false,
         use_local_models: false,

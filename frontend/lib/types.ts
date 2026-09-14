@@ -2,6 +2,7 @@ export type ResearchMode =
   | "basic_rag"
   | "hybrid_rag"
   | "conflict_aware"
+  | "consensus_rag"
   | "evidenceguard";
 
 export type EvidenceItem = {

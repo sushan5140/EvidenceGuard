@@ -20,7 +20,8 @@ function pct(value: number) {
 const MODE_LABELS: Record<ResearchMode, string> = {
   basic_rag: "Basic RAG",
   hybrid_rag: "Hybrid RAG",
-  conflict_aware: "Conflict-aware (no abstention)",
+  conflict_aware: "Conflict-aware (raw answer)",
+  consensus_rag: "Consensus RAG (no abstention)",
   evidenceguard: "Full EvidenceGuard",
 };
 
@@ -185,7 +186,7 @@ export default function Home() {
     reliability: 0.7,
   });
 
-  const conflictMode = mode === "conflict_aware" || mode === "evidenceguard";
+  const conflictMode = mode === "conflict_aware" || mode === "consensus_rag" || mode === "evidenceguard";
 
   const refresh = async () => {
     const [h, docs] = await Promise.all([api.health(), api.documents()]);
@@ -332,8 +333,9 @@ export default function Home() {
               <p>
                 {mode === "basic_rag" && "BM25 retrieval; no explicit conflict reasoning or abstention."}
                 {mode === "hybrid_rag" && "Hybrid retrieval; no explicit conflict reasoning or abstention."}
-                {mode === "conflict_aware" && "Hybrid retrieval + conflict scoring; forced to answer."}
-                {mode === "evidenceguard" && "Full system with conflict scoring and uncertainty-aware abstention."}
+                {mode === "conflict_aware" && "Hybrid retrieval + conflict scoring; raw top-ranked evidence is forced into the answer."}
+                {mode === "consensus_rag" && "Conflict-aware scoring + contradiction-pruned consensus selection; forced to answer."}
+                {mode === "evidenceguard" && "Consensus-selected evidence plus validation-calibrated selective abstention."}
               </p>
             </div>
             <textarea
@@ -467,11 +469,11 @@ export default function Home() {
         <div className="section-title">
           <div><span>06</span><h2>Controlled benchmark matrix</h2></div>
           <button className="secondary" onClick={runBenchmark} disabled={benchmarkBusy}>
-            {benchmarkBusy ? "Running benchmark…" : "Run 4 × 5 benchmark"}
+            {benchmarkBusy ? "Running benchmark…" : "Run 5 × 5 benchmark"}
           </button>
         </div>
         <p className="benchmark-intro">
-          Six controlled QA cases × four system modes × five conflict levels. The quick dashboard
+          Six controlled QA cases × five system modes × five conflict levels. The quick dashboard
           run uses deterministic fallbacks; the CLI can enable local embedding/NLI models for the
           final experiment.
         </p>
