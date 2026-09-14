@@ -58,7 +58,7 @@ def aggregate_predictions(
 
     candidates: list[AggregatedCandidate] = []
     for group in grouped.values():
-        # Do not count duplicate claims from the same document as extra support.
+        # Duplicate claims from the same document do not count as extra support.
         best_by_document: dict[str, QAPrediction] = {}
         for item in group:
             old = best_by_document.get(item.document_id)
@@ -116,12 +116,12 @@ def aggregate_predictions(
 class ExtractiveQAAggregator:
     """Independent-document QA followed by candidate aggregation.
 
-    This is intentionally separate from the production answer generator while
-    it is being evaluated. It consumes only the question and retrieved evidence;
-    RAMDocs evaluation labels never enter inference.
+    The implementation uses AutoModelForQuestionAnswering directly so it is
+    compatible with both Transformers 4.x and 5.x, where the legacy generic
+    question-answering pipeline may not be registered.
     """
 
-    _PIPELINE_CACHE: ClassVar[dict[str, Any]] = {}
+    _MODEL_CACHE: ClassVar[dict[str, tuple[Any, Any]]] = {}
 
     def __init__(
         self,
@@ -137,31 +137,125 @@ class ExtractiveQAAggregator:
         self.min_qa_score = min_qa_score
         self.max_evidence = max_evidence
         self.max_candidates = max_candidates
-        self._pipeline = None
+        self._tokenizer = None
+        self._model = None
         self.status = "not-loaded"
 
-    def _load(self):
-        if self._pipeline is not None:
-            return self._pipeline
+    def _load(self) -> tuple[Any, Any]:
+        if self._model is not None and self._tokenizer is not None:
+            return self._tokenizer, self._model
 
-        cached = self._PIPELINE_CACHE.get(self.model_name)
+        cached = self._MODEL_CACHE.get(self.model_name)
         if cached is not None:
-            self._pipeline = cached
+            self._tokenizer, self._model = cached
             self.status = f"transformers-qa:{self.model_name}:cached"
             return cached
 
-        from transformers import pipeline
+        from transformers import AutoModelForQuestionAnswering, AutoTokenizer
 
-        qa = pipeline(
-            "question-answering",
-            model=self.model_name,
-            tokenizer=self.model_name,
-            device=-1,
-        )
-        self._PIPELINE_CACHE[self.model_name] = qa
-        self._pipeline = qa
+        tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        model = AutoModelForQuestionAnswering.from_pretrained(self.model_name)
+        model.eval()
+        self._tokenizer = tokenizer
+        self._model = model
+        self._MODEL_CACHE[self.model_name] = (tokenizer, model)
         self.status = f"transformers-qa:{self.model_name}"
-        return qa
+        return tokenizer, model
+
+    def _predict(
+        self,
+        question: str,
+        evidence: list[EvidenceItem],
+    ) -> list[QAPrediction]:
+        import torch
+
+        tokenizer, model = self._load()
+        predictions: list[QAPrediction] = []
+
+        for start in range(0, len(evidence), self.batch_size):
+            batch = evidence[start : start + self.batch_size]
+            encoded = tokenizer(
+                [question] * len(batch),
+                [item.text for item in batch],
+                return_tensors="pt",
+                padding=True,
+                truncation="only_second",
+                max_length=384,
+                return_offsets_mapping=True,
+            )
+            offsets = encoded.pop("offset_mapping")
+
+            with torch.inference_mode():
+                output = model(**encoded)
+
+            for row, item in enumerate(batch):
+                start_logits = output.start_logits[row]
+                end_logits = output.end_logits[row]
+                sequence_ids = encoded.sequence_ids(row)
+                context_positions = [
+                    index
+                    for index, sequence_id in enumerate(sequence_ids)
+                    if sequence_id == 1
+                ]
+                if not context_positions:
+                    continue
+
+                input_ids = encoded["input_ids"][row]
+                cls_matches = (input_ids == tokenizer.cls_token_id).nonzero(as_tuple=False)
+                cls_index = int(cls_matches[0].item()) if len(cls_matches) else 0
+                null_score = float(start_logits[cls_index] + end_logits[cls_index])
+
+                masked_start = start_logits.clone()
+                masked_end = end_logits.clone()
+                valid = torch.zeros_like(masked_start, dtype=torch.bool)
+                valid[context_positions] = True
+                masked_start[~valid] = -1e9
+                masked_end[~valid] = -1e9
+
+                top_k = min(20, len(context_positions))
+                top_starts = torch.topk(masked_start, k=top_k).indices.tolist()
+                top_ends = torch.topk(masked_end, k=top_k).indices.tolist()
+
+                best_score = float("-inf")
+                best_span: tuple[int, int] | None = None
+                for token_start in top_starts:
+                    for token_end in top_ends:
+                        if token_end < token_start or token_end - token_start > 40:
+                            continue
+                        score = float(
+                            start_logits[token_start] + end_logits[token_end]
+                        )
+                        if score > best_score:
+                            best_score = score
+                            best_span = (token_start, token_end)
+
+                if best_span is None or best_score <= null_score:
+                    continue
+
+                token_start, token_end = best_span
+                char_start = int(offsets[row, token_start, 0])
+                char_end = int(offsets[row, token_end, 1])
+                answer = item.text[char_start:char_end].strip()
+                if not answer:
+                    continue
+
+                # SQuAD2-style confidence: how strongly the best span beats the
+                # learned no-answer (CLS) alternative.
+                qa_score = float(torch.sigmoid(torch.tensor(best_score - null_score)))
+                if qa_score < self.min_qa_score:
+                    continue
+
+                predictions.append(
+                    QAPrediction(
+                        answer=answer,
+                        qa_score=qa_score,
+                        evidence_id=item.id,
+                        document_id=item.document_id,
+                        evidence_score=item.evidence_score,
+                    )
+                )
+
+        return predictions
 
     def answer(
         self,
@@ -175,7 +269,7 @@ class ExtractiveQAAggregator:
                 engine="qa-empty",
             )
 
-        # Keep only the highest-scored evidence item for each document/context.
+        # Keep only the highest-scored evidence item for each source document.
         best_by_document: dict[str, EvidenceItem] = {}
         for item in evidence:
             old = best_by_document.get(item.document_id)
@@ -192,47 +286,7 @@ class ExtractiveQAAggregator:
             reverse=True,
         )[: self.max_evidence]
 
-        qa = self._load()
-        inputs = [
-            {"question": question, "context": item.text}
-            for item in selected
-        ]
-        try:
-            outputs = qa(
-                inputs,
-                batch_size=self.batch_size,
-                handle_impossible_answer=True,
-                max_answer_len=40,
-            )
-        except TypeError:
-            outputs = [
-                qa(
-                    item,
-                    handle_impossible_answer=True,
-                    max_answer_len=40,
-                )
-                for item in inputs
-            ]
-
-        if isinstance(outputs, dict):
-            outputs = [outputs]
-
-        predictions: list[QAPrediction] = []
-        for item, output in zip(selected, outputs):
-            answer = str(output.get("answer", "")).strip()
-            score = float(output.get("score", 0.0))
-            if not answer or score < self.min_qa_score:
-                continue
-            predictions.append(
-                QAPrediction(
-                    answer=answer,
-                    qa_score=score,
-                    evidence_id=item.id,
-                    document_id=item.document_id,
-                    evidence_score=item.evidence_score,
-                )
-            )
-
+        predictions = self._predict(question, selected)
         candidates = aggregate_predictions(
             predictions,
             max_candidates=self.max_candidates,
