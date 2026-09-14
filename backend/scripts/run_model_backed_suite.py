@@ -17,7 +17,7 @@ from app.research.tuning import (
 )
 
 
-MODES = ["basic_rag", "hybrid_rag", "conflict_aware", "evidenceguard"]
+MODES = ["basic_rag", "hybrid_rag", "conflict_aware", "consensus_rag", "evidenceguard"]
 CONFLICT_RATIOS = [0.0, 0.10, 0.25, 0.50, 0.75]
 
 
@@ -51,7 +51,7 @@ def assert_model_backed(controlled_runs: list, ramdocs_runs: list) -> dict:
     nli_statuses = Counter(
         run.nli_engine
         for run in all_runs
-        if run.mode in {"conflict_aware", "evidenceguard"}
+        if run.mode in {"conflict_aware", "consensus_rag", "evidenceguard"}
     )
 
     bad_retrieval = [
@@ -96,7 +96,9 @@ def compare_with_fallback(
     comparison: list[dict] = []
 
     for row in model_rows:
-        base = fallback[row["mode"]]
+        base = fallback.get(row["mode"])
+        if base is None:
+            continue
         comparison.append(
             {
                 "mode": row["mode"],
@@ -164,6 +166,33 @@ def comparison_markdown(rows: list[dict]) -> list[str]:
     return lines
 
 
+
+def neural_ablation_markdown(rows: list[dict]) -> list[str]:
+    by_mode = {row["mode"]: row for row in rows}
+    conflict = by_mode.get("conflict_aware")
+    consensus = by_mode.get("consensus_rag")
+    full = by_mode.get("evidenceguard")
+    lines = [
+        "| Transition | Strict acc. | Wrong-answer | Coverage |",
+        "|---|---:|---:|---:|",
+    ]
+    if conflict and consensus:
+        lines.append(
+            f"| conflict_aware → consensus_rag | "
+            f"{consensus['strict_accuracy'] - conflict['strict_accuracy']:+.3f} | "
+            f"{consensus['wrong_answer_rate'] - conflict['wrong_answer_rate']:+.3f} | "
+            f"{consensus['coverage'] - conflict['coverage']:+.3f} |"
+        )
+    if consensus and full:
+        lines.append(
+            f"| consensus_rag → evidenceguard | "
+            f"{full['strict_accuracy'] - consensus['strict_accuracy']:+.3f} | "
+            f"{full['wrong_answer_rate'] - consensus['wrong_answer_rate']:+.3f} | "
+            f"{full['coverage'] - consensus['coverage']:+.3f} |"
+        )
+    return lines
+
+
 def create_comparison_figure(
     output: Path,
     model_rows: list[dict],
@@ -172,14 +201,15 @@ def create_comparison_figure(
     import matplotlib.pyplot as plt
 
     base = {row["mode"]: row for row in fallback_rows}
-    labels = [row["mode"] for row in model_rows]
+    comparable_rows = [row for row in model_rows if row["mode"] in base]
+    labels = [row["mode"] for row in comparable_rows]
     x = list(range(len(labels)))
     width = 0.35
 
-    model_wrong = [100 * row["wrong_answer_rate"] for row in model_rows]
+    model_wrong = [100 * row["wrong_answer_rate"] for row in comparable_rows]
     fallback_wrong = [
         100 * float(base[row["mode"]]["wrong_answer_rate"])
-        for row in model_rows
+        for row in comparable_rows
     ]
 
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -200,7 +230,7 @@ def create_comparison_figure(
 
 
 def risk_coverage_rows(runs: list) -> list[dict]:
-    forced = [run for run in runs if run.mode == "conflict_aware"]
+    forced = [run for run in runs if run.mode == "consensus_rag"]
     rows: list[dict] = []
     for threshold in [i / 20 for i in range(0, 20)]:
         answered = [run for run in forced if run.confidence >= threshold]
@@ -440,6 +470,12 @@ async def main() -> None:
         "",
         *ramdocs_markdown(ramdocs_rows),
         "",
+        "## Neural stage ablation",
+        "",
+        "Negative wrong-answer deltas are improvements. consensus_rag isolates contradiction-pruned answer assembly; evidenceguard then adds abstention on top of that same path.",
+        "",
+        *neural_ablation_markdown(ramdocs_rows),
+        "",
         "## Difference from frozen fallback run",
         "",
         "Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are improvements. The model-backed EvidenceGuard row uses its validation-calibrated abstention threshold, while the fallback row retains its own frozen threshold.",
@@ -465,7 +501,7 @@ async def main() -> None:
         "- No RAMDocs label is passed into retrieval, NLI, scoring, generation, abstention calibration, or abstention logic.",
         "- Strict correctness requires every listed gold answer and no listed wrong answer after normalized phrase matching.",
         "- The generator remains the extractive fallback so this run isolates retrieval/NLI and selective-answering changes rather than mixing in an LLM generator.",
-        "- The risk-coverage curve is post-hoc evaluation built from the forced-answer conflict-aware mode; it is not used to choose the threshold.",
+        "- The risk-coverage curve is post-hoc evaluation built from consensus_rag, the forced-answer parent of EvidenceGuard; it is not used to choose the threshold.",
         "- The workflow fails if dense retrieval or NLI silently drops to a fallback engine.",
         "",
     ]

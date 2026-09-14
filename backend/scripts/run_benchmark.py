@@ -42,6 +42,7 @@ async def main() -> None:
             "basic_rag",
             "hybrid_rag",
             "conflict_aware",
+            "consensus_rag",
             "evidenceguard",
         ],
         conflict_ratios=[0.0, 0.10, 0.25, 0.50, 0.75],

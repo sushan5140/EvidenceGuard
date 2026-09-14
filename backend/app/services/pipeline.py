@@ -134,7 +134,7 @@ class EvidenceGuardPipeline:
         )
         claims = self._claims(question, retrieved)
 
-        conflict_enabled = mode in {"conflict_aware", "evidenceguard"}
+        conflict_enabled = mode in {"conflict_aware", "consensus_rag", "evidenceguard"}
         graph = self._graph(claims, use_nli=use_nli) if conflict_enabled else []
         agreements = agreement_scores([item["id"] for item in claims], graph)
 
@@ -188,7 +188,7 @@ class EvidenceGuardPipeline:
 
         generation_evidence = evidence
         selection_status = "top-score"
-        if mode == "evidenceguard" and evidence:
+        if mode in {"consensus_rag", "evidenceguard"} and evidence:
             generation_evidence = select_consensus_evidence(
                 evidence,
                 graph,

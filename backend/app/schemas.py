@@ -10,6 +10,7 @@ ResearchMode = Literal[
     "basic_rag",
     "hybrid_rag",
     "conflict_aware",
+    "consensus_rag",
     "evidenceguard",
 ]
 
@@ -94,6 +95,7 @@ class BenchmarkRequest(BaseModel):
             "basic_rag",
             "hybrid_rag",
             "conflict_aware",
+            "consensus_rag",
             "evidenceguard",
         ]
     )
