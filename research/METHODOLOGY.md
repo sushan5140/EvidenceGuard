@@ -32,7 +32,7 @@ This isolates the contribution of retrieval, conflict reasoning/scoring, consens
 
 ## Controlled conflict experiment
 
-The built-in `controlled-conflicts-v1` suite evaluates six factual questions. For every case and research mode, the corpus is regenerated at:
+The built-in `controlled-conflicts-v3-strict` suite evaluates six factual questions. For every case and research mode, the corpus is regenerated at:
 
 - 0% conflicting evidence
 - 10%
@@ -40,7 +40,7 @@ The built-in `controlled-conflicts-v1` suite evaluates six factual questions. Fo
 - 50%
 - 75%
 
-Each condition contains ten documents so the requested ratio is exact.
+Each condition contains twenty documents so the requested ratio is exact.
 
 The runner records per-example outcomes and aggregates:
 

@@ -123,7 +123,7 @@ Open **http://localhost:3000**. FastAPI docs are at **http://localhost:8000/docs
 
 ## Controlled benchmark
 
-The built-in suite contains six factual QA cases and generates ten evidence documents per case at each requested conflict level.
+The built-in suite contains six factual QA cases and generates twenty evidence documents per case at each requested conflict level.
 
 From the UI, click **Run 5 × 5 benchmark**.
 
