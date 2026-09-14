@@ -1,0 +1,61 @@
+name: QA Aggregation Paired Quick Check
+
+on:
+  push:
+    branches: ["experiment/qa-aggregation-quick"]
+    paths:
+      - "backend/scripts/run_qa_aggregate_experiment.py"
+      - "backend/app/research/qa_aggregate.py"
+      - ".github/workflows/qa-aggregate-quick.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paired-quick-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TOKENIZERS_PARALLELISM: "false"
+      EVIDENCEGUARD_ENABLE_LOCAL_MODELS: "true"
+      EVIDENCEGUARD_EMBEDDING_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
+      EVIDENCEGUARD_NLI_MODEL: "cross-encoder/nli-MiniLM2-L6-H768"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: evidenceguard-hf-qa-minilm-v1
+
+      - name: Install evaluation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.2"
+          grep -v '^torch' backend/requirements.txt > /tmp/requirements-no-torch.txt
+          pip install -r /tmp/requirements-no-torch.txt
+
+      - name: Fetch official RAMDocs test set
+        run: |
+          curl --fail --location             https://raw.githubusercontent.com/HanNight/RAMDocs/main/RAMDocs_test.jsonl             --output RAMDocs_test.jsonl
+          test -s RAMDocs_test.jsonl
+
+      - name: Run paired 100-case quick check
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: |
+          pytest -q tests/test_qa_aggregate.py
+          python scripts/run_qa_aggregate_experiment.py             --ramdocs ../RAMDocs_test.jsonl             --frozen-config ../research/results/frozen/frozen_config.json             --limit 100             --output ../research/results/qa_aggregate_quick
+
+      - name: Upload paired quick-check results
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-aggregate-quick-${{ github.sha }}
+          path: research/results/qa_aggregate_quick

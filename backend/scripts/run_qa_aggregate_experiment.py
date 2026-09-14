@@ -9,8 +9,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from app.config import get_settings
-from app.research.ramdocs import _answer_flags, load_ramdocs
 from app.research.qa_aggregate import ExtractiveQAAggregator
+from app.research.ramdocs import _answer_flags, load_ramdocs
 from app.schemas import DocumentCreate
 from app.services.pipeline import EvidenceGuardPipeline
 from app.services.store import DocumentStore
@@ -19,11 +19,16 @@ from app.services.store import DocumentStore
 @dataclass(slots=True)
 class QAExperimentRun:
     index: int
-    answer: str
-    any_gold_hit: bool
-    all_gold_hit: bool
-    wrong_answer_hit: bool
-    strict_correct: bool
+    baseline_answer: str
+    qa_answer: str
+    baseline_any_gold: bool
+    baseline_all_gold: bool
+    baseline_wrong: bool
+    baseline_strict: bool
+    qa_any_gold: bool
+    qa_all_gold: bool
+    qa_wrong: bool
+    qa_strict: bool
     candidate_count: int
     qa_engine: str
     retrieval_engine: str
@@ -40,31 +45,47 @@ def write_csv(path: Path, rows: list[dict]) -> None:
         writer.writerows(rows)
 
 
-def read_baseline(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as handle:
-        for row in csv.DictReader(handle):
-            if row["mode"] == "conflict_aware":
-                return row
-    raise RuntimeError("conflict_aware baseline row not found")
+def metrics(
+    runs: list[QAExperimentRun],
+    *,
+    prefix: str,
+) -> dict:
+    n = len(runs)
+    return {
+        "strict_accuracy": round(
+            sum(getattr(run, f"{prefix}_strict") for run in runs) / n,
+            4,
+        ),
+        "all_gold_hit_rate": round(
+            sum(getattr(run, f"{prefix}_all_gold") for run in runs) / n,
+            4,
+        ),
+        "any_gold_hit_rate": round(
+            sum(getattr(run, f"{prefix}_any_gold") for run in runs) / n,
+            4,
+        ),
+        "wrong_answer_rate": round(
+            sum(getattr(run, f"{prefix}_wrong") for run in runs) / n,
+            4,
+        ),
+    }
 
 
 async def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Evaluate independent-document extractive QA aggregation on RAMDocs"
+        description="Paired evaluation of QA aggregation against conflict-aware answers"
     )
     parser.add_argument("--ramdocs", required=True)
     parser.add_argument("--frozen-config", required=True)
-    parser.add_argument("--baseline-summary", required=True)
-    parser.add_argument("--output", default="../research/results/qa_aggregate")
+    parser.add_argument("--output", default="../research/results/qa_aggregate_quick")
     parser.add_argument("--qa-model", default="deepset/minilm-uncased-squad2")
-    parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--limit", type=int, default=100)
     args = parser.parse_args()
 
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
 
     frozen = json.loads(Path(args.frozen_config).read_text(encoding="utf-8"))
-    baseline = read_baseline(Path(args.baseline_summary))
     settings = get_settings().model_copy(
         update={
             "evidence_retrieval_weight": frozen["evidence_retrieval_weight"],
@@ -83,7 +104,7 @@ async def main() -> None:
     runs: list[QAExperimentRun] = []
 
     for index, case in enumerate(cases):
-        with TemporaryDirectory(prefix="evidenceguard-qa-") as tmp:
+        with TemporaryDirectory(prefix="evidenceguard-qa-quick-") as tmp:
             run_settings = settings.model_copy(
                 update={"data_path": str(Path(tmp) / "documents.json")}
             )
@@ -108,20 +129,32 @@ async def main() -> None:
                 use_nli=True,
                 mode="conflict_aware",
             )
+            baseline = _answer_flags(
+                response.answer,
+                case,
+                abstained=response.abstained,
+            )
+
             aggregated = aggregator.answer(case.question, response.evidence)
-            any_gold, all_gold, wrong, strict = _answer_flags(
+            qa_flags = _answer_flags(
                 aggregated.text,
                 case,
                 abstained=False,
             )
+
             runs.append(
                 QAExperimentRun(
                     index=index,
-                    answer=aggregated.text,
-                    any_gold_hit=any_gold,
-                    all_gold_hit=all_gold,
-                    wrong_answer_hit=wrong,
-                    strict_correct=strict,
+                    baseline_answer=response.answer,
+                    qa_answer=aggregated.text,
+                    baseline_any_gold=baseline[0],
+                    baseline_all_gold=baseline[1],
+                    baseline_wrong=baseline[2],
+                    baseline_strict=baseline[3],
+                    qa_any_gold=qa_flags[0],
+                    qa_all_gold=qa_flags[1],
+                    qa_wrong=qa_flags[2],
+                    qa_strict=qa_flags[3],
                     candidate_count=len(aggregated.candidates),
                     qa_engine=aggregated.engine,
                     retrieval_engine=response.model_status.get("retrieval", ""),
@@ -129,29 +162,36 @@ async def main() -> None:
                 )
             )
 
-    samples = len(runs)
+    baseline_metrics = metrics(runs, prefix="baseline")
+    qa_metrics = metrics(runs, prefix="qa")
     summary = {
-        "experiment": "qa_aggregate",
+        "experiment": "qa_aggregate_paired_quick",
         "qa_model": args.qa_model,
-        "samples": samples,
-        "strict_accuracy": round(sum(run.strict_correct for run in runs) / samples, 4),
-        "all_gold_hit_rate": round(sum(run.all_gold_hit for run in runs) / samples, 4),
-        "any_gold_hit_rate": round(sum(run.any_gold_hit for run in runs) / samples, 4),
-        "wrong_answer_rate": round(sum(run.wrong_answer_hit for run in runs) / samples, 4),
-        "mean_candidates": round(sum(run.candidate_count for run in runs) / samples, 4),
-        "baseline_conflict_aware": {
-            "strict_accuracy": float(baseline["strict_accuracy"]),
-            "all_gold_hit_rate": float(baseline["all_gold_hit_rate"]),
-            "any_gold_hit_rate": float(baseline["any_gold_hit_rate"]),
-            "wrong_answer_rate": float(baseline["wrong_answer_rate"]),
+        "samples": len(runs),
+        "baseline_conflict_aware": baseline_metrics,
+        "qa_aggregate": qa_metrics,
+        "delta": {
+            key: round(qa_metrics[key] - baseline_metrics[key], 4)
+            for key in baseline_metrics
         },
-    }
-    base = summary["baseline_conflict_aware"]
-    summary["delta_vs_conflict_aware"] = {
-        "strict_accuracy": round(summary["strict_accuracy"] - base["strict_accuracy"], 4),
-        "all_gold_hit_rate": round(summary["all_gold_hit_rate"] - base["all_gold_hit_rate"], 4),
-        "any_gold_hit_rate": round(summary["any_gold_hit_rate"] - base["any_gold_hit_rate"], 4),
-        "wrong_answer_rate": round(summary["wrong_answer_rate"] - base["wrong_answer_rate"], 4),
+        "mean_candidates": round(
+            sum(run.candidate_count for run in runs) / len(runs),
+            4,
+        ),
+        "paired_outcomes": {
+            "strict_improvements": sum(
+                not run.baseline_strict and run.qa_strict for run in runs
+            ),
+            "strict_regressions": sum(
+                run.baseline_strict and not run.qa_strict for run in runs
+            ),
+            "wrong_answer_avoided": sum(
+                run.baseline_wrong and not run.qa_wrong for run in runs
+            ),
+            "wrong_answer_added": sum(
+                not run.baseline_wrong and run.qa_wrong for run in runs
+            ),
+        },
     }
 
     write_csv(output / "runs.csv", [asdict(run) for run in runs])
@@ -159,20 +199,15 @@ async def main() -> None:
         json.dumps(summary, indent=2) + "\n",
         encoding="utf-8",
     )
-    report = [
-        "# QA aggregation experiment",
-        "",
-        "Independent-document extractive QA followed by answer-candidate aggregation.",
-        "RAMDocs labels are used only after inference for evaluation.",
-        "",
-        "~~~json",
-        json.dumps(summary, indent=2),
-        "~~~",
-        "",
-        "Acceptance rule: consider integration only if strict accuracy improves without a material increase in wrong-answer rate.",
-        "",
-    ]
-    (output / "RESULTS.md").write_text("\n".join(report), encoding="utf-8")
+    (output / "RESULTS.md").write_text(
+        "# QA aggregation paired quick check\n\n"
+        "First 100 RAMDocs cases; conflict-aware and QA-aggregated answers share "
+        "the exact same retrieval/NLI/evidence response before answer assembly.\n\n"
+        "~~~json\n"
+        + json.dumps(summary, indent=2)
+        + "\n~~~\n",
+        encoding="utf-8",
+    )
     print(json.dumps(summary, indent=2))
 
 
