@@ -4,7 +4,7 @@
   "evidence_retrieval_weight": 0.5,
   "evidence_reliability_weight": 0.3,
   "evidence_agreement_weight": 0.2,
-  "abstain_threshold": 0.5,
+  "abstain_threshold": 0.2,
   "source_fallback_abstain_threshold": 0.6,
   "ramdocs_samples": 500,
   "configuration_policy": "Evidence weights transfer unchanged from the frozen fallback run; the abstention threshold is recalibrated only on the pre-declared controlled validation split with neural retrieval/NLI."

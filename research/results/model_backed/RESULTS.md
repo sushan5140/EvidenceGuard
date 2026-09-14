@@ -11,7 +11,7 @@ This experiment keeps the frozen evidence weights unchanged, uses local neural r
   "evidence_retrieval_weight": 0.5,
   "evidence_reliability_weight": 0.3,
   "evidence_agreement_weight": 0.2,
-  "abstain_threshold": 0.5,
+  "abstain_threshold": 0.2,
   "source_fallback_abstain_threshold": 0.6,
   "ramdocs_samples": 500,
   "configuration_policy": "Evidence weights transfer unchanged from the frozen fallback run; the abstention threshold is recalibrated only on the pre-declared controlled validation split with neural retrieval/NLI."
@@ -22,12 +22,12 @@ This experiment keeps the frozen evidence weights unchanged, uses local neural r
 
 ~~~json
 {
-  "abstain_threshold": 0.5,
-  "validation_score": 0.84,
-  "validation_utility": 0.84,
-  "validation_coverage": 0.966667,
-  "validation_selective_accuracy": 0.931034,
-  "answered": 29,
+  "abstain_threshold": 0.2,
+  "validation_score": 0.8,
+  "validation_utility": 0.8,
+  "validation_coverage": 1.0,
+  "validation_selective_accuracy": 0.9,
+  "answered": 30,
   "samples": 30,
   "candidate_thresholds": [
     0.2,
@@ -69,7 +69,17 @@ The calibration uses forced-answer validation runs so threshold candidates are e
 | basic_rag | 16.4% | 16.7% | 98.4% | 23.0% | 23.4% | 0.000 |
 | hybrid_rag | 18.0% | 18.0% | 100.0% | 31.2% | 31.2% | 0.000 |
 | conflict_aware | 14.8% | 14.8% | 100.0% | 19.6% | 19.6% | 0.666 |
-| evidenceguard | 5.0% | 23.2% | 21.6% | 4.0% | 18.5% | 0.666 |
+| consensus_rag | 11.4% | 11.4% | 100.0% | 19.2% | 19.2% | 0.666 |
+| evidenceguard | 11.0% | 11.2% | 98.2% | 19.2% | 19.6% | 0.666 |
+
+## Neural stage ablation
+
+Negative wrong-answer deltas are improvements. consensus_rag isolates contradiction-pruned answer assembly; evidenceguard then adds abstention on top of that same path.
+
+| Transition | Strict acc. | Wrong-answer | Coverage |
+|---|---:|---:|---:|
+| conflict_aware → consensus_rag | -0.034 | -0.004 | +0.000 |
+| consensus_rag → evidenceguard | -0.004 | +0.000 | -0.018 |
 
 ## Difference from frozen fallback run
 
@@ -80,19 +90,19 @@ Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are i
 | basic_rag | +0.000 | +0.000 | +0.000 | +0.000 | +0.000 |
 | hybrid_rag | -0.046 | -0.046 | +0.068 | +0.000 | +0.000 |
 | conflict_aware | -0.048 | -0.048 | +0.006 | +0.000 | +0.089 |
-| evidenceguard | -0.098 | -0.006 | -0.092 | -0.406 | +0.089 |
+| evidenceguard | -0.038 | -0.126 | +0.060 | +0.360 | +0.089 |
 
 ## EvidenceGuard failure counts
 
 ~~~json
 {
-  "strict_correct": 25,
-  "wrong_answer_hits": 20,
-  "abstentions": 392,
+  "strict_correct": 55,
+  "wrong_answer_hits": 96,
+  "abstentions": 9,
   "conflict_misses": 11,
-  "strict_improvements_over_hybrid": 4,
-  "wrong_answer_harm_avoided": 136,
-  "regressions_vs_hybrid": 69
+  "strict_improvements_over_hybrid": 14,
+  "wrong_answer_harm_avoided": 69,
+  "regressions_vs_hybrid": 49
 }
 ~~~
 
@@ -103,13 +113,13 @@ Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are i
   "retrieval_engines": {
     "sentence-transformers:sentence-transformers/all-MiniLM-L6-v2": 1,
     "sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached": 559,
-    "sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache": 1060
+    "sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:score-cache": 1590
   },
   "nli_engines": {
     "transformers:cross-encoder/nli-MiniLM2-L6-H768": 1,
     "transformers:cross-encoder/nli-MiniLM2-L6-H768:cached": 515,
-    "transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache": 520,
-    "not-loaded": 54
+    "transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache": 1023,
+    "not-loaded": 81
   }
 }
 ~~~
@@ -121,5 +131,5 @@ Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are i
 - No RAMDocs label is passed into retrieval, NLI, scoring, generation, abstention calibration, or abstention logic.
 - Strict correctness requires every listed gold answer and no listed wrong answer after normalized phrase matching.
 - The generator remains the extractive fallback so this run isolates retrieval/NLI and selective-answering changes rather than mixing in an LLM generator.
-- The risk-coverage curve is post-hoc evaluation built from the forced-answer conflict-aware mode; it is not used to choose the threshold.
+- The risk-coverage curve is post-hoc evaluation built from consensus_rag, the forced-answer parent of EvidenceGuard; it is not used to choose the threshold.
 - The workflow fails if dense retrieval or NLI silently drops to a fallback engine.
