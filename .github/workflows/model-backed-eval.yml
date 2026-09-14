@@ -43,7 +43,9 @@ jobs:
       - name: Install model-backed dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.2"
+          grep -v '^torch' backend/requirements.txt > /tmp/requirements-no-torch.txt
+          pip install -r /tmp/requirements-no-torch.txt
           pip install "matplotlib>=3.9,<4"
 
       - name: Fetch official RAMDocs test set
