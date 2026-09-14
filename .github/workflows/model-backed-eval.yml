@@ -1,4 +1,5 @@
 name: Model-Backed Research Evaluation
+# Publish results only when the evaluated head still matches main.
 
 on:
   push:
