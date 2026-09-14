@@ -17,7 +17,7 @@ from app.research.tuning import (
 )
 
 
-MODES = ["basic_rag", "hybrid_rag", "conflict_aware", "consensus_rag", "evidenceguard"]
+MODES = ["basic_rag", "hybrid_rag", "conflict_aware", "consensus_rag", "ambiguity_rag", "evidenceguard"]
 CONFLICT_RATIOS = [0.0, 0.10, 0.25, 0.50, 0.75]
 
 
@@ -51,7 +51,7 @@ def assert_model_backed(controlled_runs: list, ramdocs_runs: list) -> dict:
     nli_statuses = Counter(
         run.nli_engine
         for run in all_runs
-        if run.mode in {"conflict_aware", "consensus_rag", "evidenceguard"}
+        if run.mode in {"conflict_aware", "consensus_rag", "ambiguity_rag", "evidenceguard"}
     )
 
     bad_retrieval = [
@@ -171,6 +171,7 @@ def neural_ablation_markdown(rows: list[dict]) -> list[str]:
     by_mode = {row["mode"]: row for row in rows}
     conflict = by_mode.get("conflict_aware")
     consensus = by_mode.get("consensus_rag")
+    ambiguity = by_mode.get("ambiguity_rag")
     full = by_mode.get("evidenceguard")
     lines = [
         "| Transition | Strict acc. | Wrong-answer | Coverage |",
@@ -182,6 +183,13 @@ def neural_ablation_markdown(rows: list[dict]) -> list[str]:
             f"{consensus['strict_accuracy'] - conflict['strict_accuracy']:+.3f} | "
             f"{consensus['wrong_answer_rate'] - conflict['wrong_answer_rate']:+.3f} | "
             f"{consensus['coverage'] - conflict['coverage']:+.3f} |"
+        )
+    if conflict and ambiguity:
+        lines.append(
+            f"| conflict_aware → ambiguity_rag | "
+            f"{ambiguity['strict_accuracy'] - conflict['strict_accuracy']:+.3f} | "
+            f"{ambiguity['wrong_answer_rate'] - conflict['wrong_answer_rate']:+.3f} | "
+            f"{ambiguity['coverage'] - conflict['coverage']:+.3f} |"
         )
     if conflict and full:
         lines.append(
@@ -472,7 +480,7 @@ async def main() -> None:
         "",
         "## Neural stage ablation",
         "",
-        "Negative wrong-answer deltas are improvements. consensus_rag is a side ablation for contradiction-pruned answer assembly; evidenceguard adds abstention directly to conflict_aware so a losing selector is not baked into the final system.",
+        "Negative wrong-answer deltas are improvements. consensus_rag tests contradiction pruning; ambiguity_rag tests support-cluster answer aggregation; evidenceguard remains the canonical conflict-aware + abstention system unless an ablation clearly wins.",
         "",
         *neural_ablation_markdown(ramdocs_rows),
         "",

@@ -3,7 +3,7 @@ name: Model-Backed Research Evaluation
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "experiment/ambiguity-clusters"]
     paths:
       - "backend/app/services/retrieval.py"
       - "backend/app/services/nli.py"
@@ -90,6 +90,12 @@ jobs:
               encoding="utf-8",
           )
           PY
+
+      - name: Upload model-backed results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ambiguity-cluster-results-${{ github.sha }}
+          path: research/results/model_backed
 
       - name: Commit model-backed results
         run: |
