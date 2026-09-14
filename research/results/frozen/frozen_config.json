@@ -3,9 +3,9 @@
   "evidence_reliability_weight": 0.3,
   "evidence_agreement_weight": 0.2,
   "abstain_threshold": 0.6,
-  "validation_score": 0.55386,
-  "validation_utility": 0.573333,
-  "validation_ece": 0.129823,
+  "validation_score": 0.33886,
+  "validation_utility": 0.373333,
+  "validation_ece": 0.229823,
   "validation_coverage": 0.966667,
   "protocol": {
     "suite": "controlled-conflicts-v2",
