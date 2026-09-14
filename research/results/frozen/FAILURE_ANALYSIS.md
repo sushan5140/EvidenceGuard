@@ -11,7 +11,8 @@ Document-type labels are used only after inference for evaluation.
 | wrong answer hits | 66 | 13.2% |
 | abstentions | 189 | 37.8% |
 | conflict misses | 96 | 19.2% |
-| improvements over hybrid | 158 | 31.6% |
+| strict improvements over hybrid | 7 | 1.4% |
+| wrong answer harm avoided | 58 | 11.6% |
 | regressions vs hybrid | 46 | 9.2% |
 
 ## Wrong-answer adoption
@@ -120,7 +121,60 @@ Document-type labels are used only after inference for evaluation.
 **Outcome:** strict_correct=True, all_gold=True, any_gold=True, wrong_hit=False, abstained=False, confidence=0.669, conflict_detected=False
 
 
-## Cases improved relative to Hybrid RAG
+## Strict improvements relative to Hybrid RAG
+
+### Case 33
+
+**Question:** What is the population of Madi Municipality?
+
+**Gold answers:** About 50,000
+
+**Wrong answers:** About 10,000
+
+**Outcome:** strict_correct=True, all_gold=True, any_gold=True, wrong_hit=False, abstained=False, confidence=0.672, conflict_detected=True
+
+### Case 38
+
+**Question:** Where was Airways International based?
+
+**Gold answers:** Miami, Florida
+
+**Wrong answers:** Anchorage, Alaska
+
+**Outcome:** strict_correct=True, all_gold=True, any_gold=True, wrong_hit=False, abstained=False, confidence=0.825, conflict_detected=False
+
+### Case 42
+
+**Question:** When was Beacon Mill last worked?
+
+**Gold answers:** 1921
+
+**Wrong answers:** 1985, 1955
+
+**Outcome:** strict_correct=True, all_gold=True, any_gold=True, wrong_hit=False, abstained=False, confidence=0.626, conflict_detected=True
+
+### Case 52
+
+**Question:** When was the Bonner House built?
+
+**Gold answers:** about 1835
+
+**Wrong answers:** about 1935
+
+**Outcome:** strict_correct=True, all_gold=True, any_gold=True, wrong_hit=False, abstained=False, confidence=0.655, conflict_detected=False
+
+### Case 62
+
+**Question:** 19 Mayıs Stadium is the home venue of which sports team?
+
+**Gold answers:** Ankara's Gençlerbirliği
+
+**Wrong answers:** Bursaspor
+
+**Outcome:** strict_correct=True, all_gold=True, any_gold=True, wrong_hit=False, abstained=False, confidence=0.900, conflict_detected=False
+
+
+## Wrong-answer harm avoided relative to Hybrid RAG
 
 ### Case 3
 
@@ -142,16 +196,6 @@ Document-type labels are used only after inference for evaluation.
 
 **Outcome:** strict_correct=False, all_gold=False, any_gold=False, wrong_hit=False, abstained=True, confidence=0.190, conflict_detected=True
 
-### Case 22
-
-**Question:** When did Louis Alexandre die?
-
-**Gold answers:** 1 December 1737
-
-**Wrong answers:** 15 June 1745, 1 January 1738
-
-**Outcome:** strict_correct=False, all_gold=False, any_gold=False, wrong_hit=False, abstained=True, confidence=0.292, conflict_detected=True
-
 ### Case 33
 
 **Question:** What is the population of Madi Municipality?
@@ -171,6 +215,16 @@ Document-type labels are used only after inference for evaluation.
 **Wrong answers:** Anchorage, Alaska
 
 **Outcome:** strict_correct=True, all_gold=True, any_gold=True, wrong_hit=False, abstained=False, confidence=0.825, conflict_detected=False
+
+### Case 42
+
+**Question:** When was Beacon Mill last worked?
+
+**Gold answers:** 1921
+
+**Wrong answers:** 1985, 1955
+
+**Outcome:** strict_correct=True, all_gold=True, any_gold=True, wrong_hit=False, abstained=False, confidence=0.626, conflict_detected=True
 
 
 ## Regressions relative to Hybrid RAG

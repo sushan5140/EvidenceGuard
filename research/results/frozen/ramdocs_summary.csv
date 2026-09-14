@@ -1,5 +1,5 @@
-mode,samples,strict_accuracy,all_gold_hit_rate,any_gold_hit_rate,wrong_answer_rate,abstention_rate,mean_confidence,ece_strict,conflict_precision,conflict_recall,conflict_f1
-basic_rag,500,0.164,0.222,0.782,0.23,0.016,0.8401,0.6761,0.0,0.0,0.0
-hybrid_rag,500,0.226,0.304,0.826,0.244,0.0,0.7872,0.5612,0.0,0.0,0.0
-conflict_aware,500,0.196,0.246,0.752,0.19,0.0,0.6334,0.4437,0.5534,0.6017,0.5765
-evidenceguard,500,0.148,0.192,0.468,0.132,0.378,0.6334,0.4854,0.5534,0.6017,0.5765
+mode,samples,strict_accuracy,selective_strict_accuracy,coverage,all_gold_hit_rate,any_gold_hit_rate,wrong_answer_rate,wrong_answer_among_answered,abstention_rate,mean_confidence,ece_strict,conflict_precision,conflict_recall,conflict_f1
+basic_rag,500,0.164,0.1667,0.984,0.222,0.782,0.23,0.2337,0.016,0.8401,0.6761,0.0,0.0,0.0
+hybrid_rag,500,0.226,0.226,1.0,0.304,0.826,0.244,0.244,0.0,0.7872,0.5612,0.0,0.0,0.0
+conflict_aware,500,0.196,0.196,1.0,0.246,0.752,0.19,0.19,0.0,0.6334,0.4437,0.5534,0.6017,0.5765
+evidenceguard,500,0.148,0.2379,0.622,0.192,0.468,0.132,0.2122,0.378,0.6334,0.4854,0.5534,0.6017,0.5765

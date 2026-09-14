@@ -8,7 +8,7 @@
   "validation_ece": 0.229823,
   "validation_coverage": 0.966667,
   "protocol": {
-    "suite": "controlled-conflicts-v2",
+    "suite": "controlled-conflicts-v3-strict",
     "validation_case_ids": [
       "apollo_11",
       "c_creator",
