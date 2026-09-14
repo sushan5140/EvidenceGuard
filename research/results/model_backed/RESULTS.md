@@ -11,7 +11,7 @@ This experiment keeps the frozen evidence weights unchanged, uses local neural r
   "evidence_retrieval_weight": 0.5,
   "evidence_reliability_weight": 0.3,
   "evidence_agreement_weight": 0.2,
-  "abstain_threshold": 0.2,
+  "abstain_threshold": 0.5,
   "source_fallback_abstain_threshold": 0.6,
   "ramdocs_samples": 500,
   "configuration_policy": "Evidence weights transfer unchanged from the frozen fallback run; the abstention threshold is recalibrated only on the pre-declared controlled validation split with neural retrieval/NLI."
@@ -22,12 +22,12 @@ This experiment keeps the frozen evidence weights unchanged, uses local neural r
 
 ~~~json
 {
-  "abstain_threshold": 0.2,
-  "validation_score": 0.866667,
-  "validation_utility": 0.866667,
-  "validation_coverage": 1.0,
-  "validation_selective_accuracy": 0.933333,
-  "answered": 30,
+  "abstain_threshold": 0.5,
+  "validation_score": 0.84,
+  "validation_utility": 0.84,
+  "validation_coverage": 0.966667,
+  "validation_selective_accuracy": 0.931034,
+  "answered": 29,
   "samples": 30,
   "candidate_thresholds": [
     0.2,
@@ -69,7 +69,7 @@ The calibration uses forced-answer validation runs so threshold candidates are e
 | basic_rag | 16.4% | 16.7% | 98.4% | 23.0% | 23.4% | 0.000 |
 | hybrid_rag | 18.0% | 18.0% | 100.0% | 31.2% | 31.2% | 0.000 |
 | conflict_aware | 14.8% | 14.8% | 100.0% | 19.6% | 19.6% | 0.666 |
-| evidenceguard | 13.8% | 14.1% | 98.2% | 19.6% | 20.0% | 0.666 |
+| evidenceguard | 5.0% | 23.2% | 21.6% | 4.0% | 18.5% | 0.666 |
 
 ## Difference from frozen fallback run
 
@@ -80,19 +80,19 @@ Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are i
 | basic_rag | +0.000 | +0.000 | +0.000 | +0.000 | +0.000 |
 | hybrid_rag | -0.046 | -0.046 | +0.068 | +0.000 | +0.000 |
 | conflict_aware | -0.048 | -0.048 | +0.006 | +0.000 | +0.089 |
-| evidenceguard | -0.010 | -0.097 | +0.064 | +0.360 | +0.089 |
+| evidenceguard | -0.098 | -0.006 | -0.092 | -0.406 | +0.089 |
 
 ## EvidenceGuard failure counts
 
 ~~~json
 {
-  "strict_correct": 69,
-  "wrong_answer_hits": 98,
-  "abstentions": 9,
+  "strict_correct": 25,
+  "wrong_answer_hits": 20,
+  "abstentions": 392,
   "conflict_misses": 11,
-  "strict_improvements_over_hybrid": 16,
-  "wrong_answer_harm_avoided": 61,
-  "regressions_vs_hybrid": 37
+  "strict_improvements_over_hybrid": 4,
+  "wrong_answer_harm_avoided": 136,
+  "regressions_vs_hybrid": 69
 }
 ~~~
 
