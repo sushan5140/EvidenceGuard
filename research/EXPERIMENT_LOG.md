@@ -46,19 +46,31 @@ For canonical `conflict_aware` RAMDocs runs:
 
 This indicates that incomplete multi-entity answer assembly is a larger bottleneck than simply detecting misinformation.
 
+## Finding 4 — all-pair NLI improves recall but worsens the system
+
+The `experiment/all-pair-nli` branch removed the lexical-overlap gate and sent every cross-document claim pair to NLI.
+
+Compared with the canonical neural baseline:
+
+| Metric | Canonical | All-pair NLI | Delta |
+|---|---:|---:|---:|
+| Conflict precision | 51.1% | 49.8% | -1.3 pp |
+| Conflict recall | 95.4% | 97.9% | +2.5 pp |
+| Conflict F1 | 0.666 | 0.660 | -0.006 |
+| Conflict-aware strict accuracy | 14.8% | 14.0% | -0.8 pp |
+| Conflict-aware wrong-answer rate | 19.6% | 21.8% | +2.2 pp |
+| EvidenceGuard strict accuracy | 13.8% | 12.6% | -1.2 pp |
+| EvidenceGuard wrong-answer rate | 19.6% | 21.4% | +1.8 pp |
+
+The full all-pair evaluation also took about 26 minutes versus about 15 minutes for the canonical run.
+
+Decision: reject the all-pair NLI change and close its draft PR. Higher recall alone is not useful when precision, conflict F1, answer accuracy, wrong-answer rate, and compute cost all move in the wrong direction.
+
 ## Active experiments
 
-### all-pair NLI conflict discovery
+### all-pair NLI conflict discovery — rejected
 
-Branch: `experiment/all-pair-nli`.
-
-Hypothesis: the lexical-overlap prefilter may hide semantically phrased contradictions. The experiment sends every cross-document claim pair to NLI (maximum 66 pairs for 12 retained claims).
-
-Acceptance criteria:
-
-- material conflict-recall/F1 improvement,
-- no disproportionate precision collapse,
-- answer metrics must improve enough to justify the added inference cost.
+Branch: `experiment/all-pair-nli`. Draft PR closed after the full RAMDocs experiment. See Finding 4.
 
 ### independent-document QA aggregation
 
