@@ -1,9 +1,9 @@
 {
   "abstain_threshold": 0.2,
-  "validation_score": 0.8,
-  "validation_utility": 0.8,
+  "validation_score": 0.866667,
+  "validation_utility": 0.866667,
   "validation_coverage": 1.0,
-  "validation_selective_accuracy": 0.9,
+  "validation_selective_accuracy": 0.933333,
   "answered": 30,
   "samples": 30,
   "candidate_thresholds": [

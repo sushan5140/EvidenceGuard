@@ -23,10 +23,10 @@ This experiment keeps the frozen evidence weights unchanged, uses local neural r
 ~~~json
 {
   "abstain_threshold": 0.2,
-  "validation_score": 0.8,
-  "validation_utility": 0.8,
+  "validation_score": 0.866667,
+  "validation_utility": 0.866667,
   "validation_coverage": 1.0,
-  "validation_selective_accuracy": 0.9,
+  "validation_selective_accuracy": 0.933333,
   "answered": 30,
   "samples": 30,
   "candidate_thresholds": [
@@ -70,16 +70,16 @@ The calibration uses forced-answer validation runs so threshold candidates are e
 | hybrid_rag | 18.0% | 18.0% | 100.0% | 31.2% | 31.2% | 0.000 |
 | conflict_aware | 14.8% | 14.8% | 100.0% | 19.6% | 19.6% | 0.666 |
 | consensus_rag | 11.4% | 11.4% | 100.0% | 19.2% | 19.2% | 0.666 |
-| evidenceguard | 11.0% | 11.2% | 98.2% | 19.2% | 19.6% | 0.666 |
+| evidenceguard | 13.8% | 14.1% | 98.2% | 19.6% | 20.0% | 0.666 |
 
 ## Neural stage ablation
 
-Negative wrong-answer deltas are improvements. consensus_rag isolates contradiction-pruned answer assembly; evidenceguard then adds abstention on top of that same path.
+Negative wrong-answer deltas are improvements. consensus_rag is a side ablation for contradiction-pruned answer assembly; evidenceguard adds abstention directly to conflict_aware so a losing selector is not baked into the final system.
 
 | Transition | Strict acc. | Wrong-answer | Coverage |
 |---|---:|---:|---:|
 | conflict_aware → consensus_rag | -0.034 | -0.004 | +0.000 |
-| consensus_rag → evidenceguard | -0.004 | +0.000 | -0.018 |
+| conflict_aware → evidenceguard | -0.010 | +0.000 | -0.018 |
 
 ## Difference from frozen fallback run
 
@@ -90,19 +90,19 @@ Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are i
 | basic_rag | +0.000 | +0.000 | +0.000 | +0.000 | +0.000 |
 | hybrid_rag | -0.046 | -0.046 | +0.068 | +0.000 | +0.000 |
 | conflict_aware | -0.048 | -0.048 | +0.006 | +0.000 | +0.089 |
-| evidenceguard | -0.038 | -0.126 | +0.060 | +0.360 | +0.089 |
+| evidenceguard | -0.010 | -0.097 | +0.064 | +0.360 | +0.089 |
 
 ## EvidenceGuard failure counts
 
 ~~~json
 {
-  "strict_correct": 55,
-  "wrong_answer_hits": 96,
+  "strict_correct": 69,
+  "wrong_answer_hits": 98,
   "abstentions": 9,
   "conflict_misses": 11,
-  "strict_improvements_over_hybrid": 14,
-  "wrong_answer_harm_avoided": 69,
-  "regressions_vs_hybrid": 49
+  "strict_improvements_over_hybrid": 16,
+  "wrong_answer_harm_avoided": 61,
+  "regressions_vs_hybrid": 37
 }
 ~~~
 
@@ -131,5 +131,5 @@ Positive accuracy/F1 deltas are improvements; negative wrong-answer deltas are i
 - No RAMDocs label is passed into retrieval, NLI, scoring, generation, abstention calibration, or abstention logic.
 - Strict correctness requires every listed gold answer and no listed wrong answer after normalized phrase matching.
 - The generator remains the extractive fallback so this run isolates retrieval/NLI and selective-answering changes rather than mixing in an LLM generator.
-- The risk-coverage curve is post-hoc evaluation built from consensus_rag, the forced-answer parent of EvidenceGuard; it is not used to choose the threshold.
+- The risk-coverage curve is post-hoc evaluation built from conflict_aware, the forced-answer parent of EvidenceGuard; consensus_rag is reported separately as a side ablation.
 - The workflow fails if dense retrieval or NLI silently drops to a fallback engine.

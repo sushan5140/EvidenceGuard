@@ -1,13 +1,13 @@
 case_id,mode,requested_conflict_ratio,actual_conflict_ratio,correct,abstained,confidence,conflict_expected,conflict_detected,retrieval_engine,nli_engine
 apollo_11,evidenceguard,0.0,0.0,True,False,1.0,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2,transformers:cross-encoder/nli-MiniLM2-L6-H768
 python_creator,evidenceguard,0.0,0.0,True,False,1.0,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
-solar_system,evidenceguard,0.0,0.0,False,False,1.0,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
+solar_system,evidenceguard,0.0,0.0,True,False,1.0,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 japan_capital,evidenceguard,0.0,0.0,True,False,1.0,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 c_creator,evidenceguard,0.0,0.0,True,False,0.8037,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 gold_symbol,evidenceguard,0.0,0.0,True,False,0.9303,False,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 apollo_11,evidenceguard,0.1,0.1,True,False,1.0,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 python_creator,evidenceguard,0.1,0.1,True,False,1.0,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
-solar_system,evidenceguard,0.1,0.1,False,False,0.9767,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
+solar_system,evidenceguard,0.1,0.1,True,False,0.9767,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 japan_capital,evidenceguard,0.1,0.1,True,False,0.9287,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 c_creator,evidenceguard,0.1,0.1,True,False,1.0,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
 gold_symbol,evidenceguard,0.1,0.1,True,False,0.9617,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
@@ -17,7 +17,7 @@ solar_system,evidenceguard,0.25,0.25,True,False,0.9743,True,False,sentence-trans
 japan_capital,evidenceguard,0.25,0.25,True,False,0.9302,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 c_creator,evidenceguard,0.25,0.25,True,False,1.0,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 gold_symbol,evidenceguard,0.25,0.25,True,False,0.8827,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
-apollo_11,evidenceguard,0.5,0.5,True,False,0.7219,True,True,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
+apollo_11,evidenceguard,0.5,0.5,False,False,0.7219,True,True,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 python_creator,evidenceguard,0.5,0.5,True,False,0.9006,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:cached
 solar_system,evidenceguard,0.5,0.5,True,False,0.9691,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
 japan_capital,evidenceguard,0.5,0.5,True,False,0.9322,True,False,sentence-transformers:sentence-transformers/all-MiniLM-L6-v2:cached,transformers:cross-encoder/nli-MiniLM2-L6-H768:relation-cache
