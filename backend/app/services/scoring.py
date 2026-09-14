@@ -71,46 +71,61 @@ def select_consensus_evidence(
     max_items: int = 3,
     contradiction_threshold: float = 0.65,
 ) -> list[EvidenceItem]:
-    """Select a compact, mutually consistent evidence set for final answering.
+    """Keep the strongest evidence anchor and prune direct contradictions.
 
-    EvidenceGuard still returns the complete ranked evidence list for auditability.
-    This selector is used only by the full EvidenceGuard answer path so the
-    baseline modes remain unchanged.
+    The full ranked evidence and conflict graph remain visible for auditability.
+    Consensus selection changes only the compact evidence set used to assemble
+    an answer in consensus_rag / EvidenceGuard.
+
+    Crucially, graph popularity is not allowed to replace the strongest scored
+    claim. This prevents a larger but lower-quality conflicting cluster from
+    displacing the evidence-score winner.
     """
 
     if not evidence or max_items <= 0:
         return []
 
-    support_strength = defaultdict(float)
-    conflict_strength = defaultdict(float)
-    strong_conflicts: dict[str, set[str]] = defaultdict(set)
+    ranked = sorted(
+        evidence,
+        key=lambda item: (
+            item.evidence_score,
+            item.agreement_score,
+            item.retrieval_score,
+        ),
+        reverse=True,
+    )
 
+    strong_conflicts: dict[str, set[str]] = defaultdict(set)
+    support_strength = defaultdict(float)
     for edge in edges:
         if edge.relation == "supports":
             support_strength[edge.source] += edge.confidence
             support_strength[edge.target] += edge.confidence
-        elif edge.relation == "contradicts":
-            conflict_strength[edge.source] += edge.confidence
-            conflict_strength[edge.target] += edge.confidence
-            if edge.confidence >= contradiction_threshold:
-                strong_conflicts[edge.source].add(edge.target)
-                strong_conflicts[edge.target].add(edge.source)
+        elif (
+            edge.relation == "contradicts"
+            and edge.confidence >= contradiction_threshold
+        ):
+            strong_conflicts[edge.source].add(edge.target)
+            strong_conflicts[edge.target].add(edge.source)
 
-    def consensus_rank(item: EvidenceItem) -> tuple[float, float, float]:
-        graph_adjustment = (
-            0.08 * support_strength[item.id]
-            - 0.12 * conflict_strength[item.id]
-        )
-        return (
-            item.evidence_score + graph_adjustment,
+    anchor = ranked[0]
+    selected = [anchor]
+
+    # Among non-conflicting candidates, prefer claims that support the anchor,
+    # then fall back to their original evidence score ordering.
+    remaining = sorted(
+        ranked[1:],
+        key=lambda item: (
+            1.0 if item.id not in strong_conflicts[anchor.id] else 0.0,
+            support_strength[item.id],
+            item.evidence_score,
             item.agreement_score,
             item.retrieval_score,
-        )
+        ),
+        reverse=True,
+    )
 
-    ranked = sorted(evidence, key=consensus_rank, reverse=True)
-    selected: list[EvidenceItem] = []
-
-    for item in ranked:
+    for item in remaining:
         if any(
             chosen.id in strong_conflicts[item.id]
             for chosen in selected
@@ -120,4 +135,4 @@ def select_consensus_evidence(
         if len(selected) >= max_items:
             break
 
-    return selected or ranked[:1]
+    return selected

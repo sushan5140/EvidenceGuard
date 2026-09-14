@@ -57,7 +57,7 @@ def test_consensus_selector_drops_strongly_contradictory_claims():
     selected = select_consensus_evidence(evidence, edges, max_items=3)
     ids = [entry.id for entry in selected]
 
-    assert "a" in ids
+    assert ids[0] == "a"
     assert "b" in ids
     assert "c" not in ids
 
@@ -73,4 +73,36 @@ def test_consensus_selector_keeps_a_fallback_when_everything_conflicts():
 
     selected = select_consensus_evidence(evidence, edges, max_items=2)
 
-    assert len(selected) == 1
+    assert [entry.id for entry in selected] == ["a"]
+
+
+def test_consensus_selector_never_replaces_strongest_anchor_with_popular_cluster():
+    evidence = [
+        item("anchor", evidence_score=0.92, agreement_score=0.70),
+        item("cluster_a", evidence_score=0.78, agreement_score=0.85),
+        item("cluster_b", evidence_score=0.76, agreement_score=0.84),
+    ]
+    edges = [
+        ConflictEdge(
+            source="cluster_a",
+            target="cluster_b",
+            relation="supports",
+            confidence=0.99,
+        ),
+        ConflictEdge(
+            source="anchor",
+            target="cluster_a",
+            relation="contradicts",
+            confidence=0.95,
+        ),
+        ConflictEdge(
+            source="anchor",
+            target="cluster_b",
+            relation="contradicts",
+            confidence=0.95,
+        ),
+    ]
+
+    selected = select_consensus_evidence(evidence, edges, max_items=3)
+
+    assert [entry.id for entry in selected] == ["anchor"]
