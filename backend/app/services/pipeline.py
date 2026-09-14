@@ -97,10 +97,10 @@ class EvidenceGuardPipeline:
             for right in claims[i + 1 :]:
                 if left["document_id"] == right["document_id"]:
                     continue
-                overlap = _question_overlap(left["claim"], right["claim"])
-                reverse_overlap = _question_overlap(right["claim"], left["claim"])
-                if max(overlap, reverse_overlap) < 0.18:
-                    continue
+                # At most 12 claims are retained, so all cross-document
+                # claim pairs are tractable (<= 66 total pairs). Let the NLI
+                # model decide neutrality instead of dropping semantically
+                # conflicting pairs through a lexical-overlap gate.
                 candidates.append((left, right))
                 pairs.append((left["claim"], right["claim"]))
 
