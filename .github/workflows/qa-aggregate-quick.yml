@@ -1,8 +1,8 @@
-name: QA Aggregation Paired Quick Check
+name: QA Verifier Paired Quick Check
 
 on:
   push:
-    branches: ["experiment/qa-aggregation-quick"]
+    branches: ["experiment/qa-verifier-quick"]
     paths:
       - "backend/scripts/run_qa_aggregate_experiment.py"
       - "backend/app/research/qa_aggregate.py"
@@ -57,5 +57,5 @@ jobs:
       - name: Upload paired quick-check results
         uses: actions/upload-artifact@v4
         with:
-          name: qa-aggregate-quick-${{ github.sha }}
+          name: qa-verifier-quick-${{ github.sha }}
           path: research/results/qa_aggregate_quick

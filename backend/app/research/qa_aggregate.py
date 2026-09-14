@@ -113,6 +113,30 @@ def aggregate_predictions(
     ][:max_candidates]
 
 
+
+def apply_corroboration_policy(
+    candidates: list[AggregatedCandidate],
+) -> list[AggregatedCandidate]:
+    """Require independent corroboration only when proposing multiple answers.
+
+    A single best answer may remain supported by one source. When multiple
+    answers are proposed, each surviving answer must have been extracted from
+    at least two distinct source documents. If no candidate meets that bar,
+    fall back to the single strongest candidate rather than emitting several
+    uncorroborated hypotheses.
+    """
+
+    if len(candidates) <= 1:
+        return candidates
+
+    corroborated = [
+        candidate
+        for candidate in candidates
+        if candidate.support_documents >= 2
+    ]
+    return corroborated if corroborated else candidates[:1]
+
+
 class ExtractiveQAAggregator:
     """Independent-document QA followed by candidate aggregation.
 
@@ -291,6 +315,7 @@ class ExtractiveQAAggregator:
             predictions,
             max_candidates=self.max_candidates,
         )
+        candidates = apply_corroboration_policy(candidates)
         if not candidates:
             return AggregatedAnswer(
                 text="I do not have a sufficiently supported extractive answer.",

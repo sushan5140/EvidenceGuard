@@ -2,6 +2,7 @@ from app.research.qa_aggregate import (
     QAPrediction,
     _normalize_answer,
     aggregate_predictions,
+    apply_corroboration_policy,
 )
 
 
@@ -67,3 +68,32 @@ def test_multiple_plausible_answers_can_survive_relative_floor():
     assert "Alpha" in answers
     assert "Beta" in answers
     assert "Weak" not in answers
+
+
+
+def test_multi_answer_policy_keeps_only_cross_document_corroborated_candidates():
+    predictions = [
+        prediction("Alpha", qa_score=0.85, evidence_score=0.80, document_id="a1"),
+        prediction("Alpha", qa_score=0.82, evidence_score=0.78, document_id="a2"),
+        prediction("Beta", qa_score=0.88, evidence_score=0.79, document_id="b1"),
+    ]
+    candidates = aggregate_predictions(predictions, max_candidates=3)
+
+    verified = apply_corroboration_policy(candidates)
+
+    assert [candidate.answer for candidate in verified] == ["Alpha"]
+    assert verified[0].support_documents == 2
+
+
+def test_multi_answer_policy_falls_back_to_one_when_nothing_is_corroborated():
+    predictions = [
+        prediction("Alpha", qa_score=0.85, evidence_score=0.80, document_id="a"),
+        prediction("Beta", qa_score=0.82, evidence_score=0.78, document_id="b"),
+        prediction("Gamma", qa_score=0.80, evidence_score=0.76, document_id="c"),
+    ]
+    candidates = aggregate_predictions(predictions, max_candidates=3)
+
+    verified = apply_corroboration_policy(candidates)
+
+    assert len(verified) == 1
+    assert verified[0].answer == candidates[0].answer

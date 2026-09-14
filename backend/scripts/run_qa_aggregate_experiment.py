@@ -165,11 +165,11 @@ async def main() -> None:
     baseline_metrics = metrics(runs, prefix="baseline")
     qa_metrics = metrics(runs, prefix="qa")
     summary = {
-        "experiment": "qa_aggregate_paired_quick",
+        "experiment": "qa_verifier_paired_quick",
         "qa_model": args.qa_model,
         "samples": len(runs),
         "baseline_conflict_aware": baseline_metrics,
-        "qa_aggregate": qa_metrics,
+        "qa_verifier": qa_metrics,
         "delta": {
             key: round(qa_metrics[key] - baseline_metrics[key], 4)
             for key in baseline_metrics
@@ -200,8 +200,8 @@ async def main() -> None:
         encoding="utf-8",
     )
     (output / "RESULTS.md").write_text(
-        "# QA aggregation paired quick check\n\n"
-        "First 100 RAMDocs cases; conflict-aware and QA-aggregated answers share "
+        "## QA verifier paired quick check\n\n"
+        "First 100 RAMDocs cases; conflict-aware and corroboration-filtered QA answers share "
         "the exact same retrieval/NLI/evidence response before answer assembly.\n\n"
         "~~~json\n"
         + json.dumps(summary, indent=2)
