@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Any, ClassVar
 
 import numpy as np
 
@@ -22,11 +23,14 @@ def _token_set(text: str) -> set[str]:
 
 
 class NLIEngine:
-    """Pairwise NLI with a deterministic heuristic fallback."""
+    """Pairwise NLI with process-wide model caching and batched inference."""
 
-    def __init__(self, model_name: str, *, enabled: bool = True):
+    _MODEL_CACHE: ClassVar[dict[str, tuple[Any, Any]]] = {}
+
+    def __init__(self, model_name: str, *, enabled: bool = True, batch_size: int = 32):
         self.model_name = model_name
         self.enabled = enabled
+        self.batch_size = batch_size
         self._tokenizer = None
         self._model = None
         self.status = "not-loaded"
@@ -37,48 +41,75 @@ class NLIEngine:
             return False
         if self._model is not None and self._tokenizer is not None:
             return True
+
+        cached = self._MODEL_CACHE.get(self.model_name)
+        if cached is not None:
+            self._tokenizer, self._model = cached
+            self.status = f"transformers:{self.model_name}:cached"
+            return True
+
         try:
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            self._model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
-            self._model.eval()
+            tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+            model.eval()
+            self._tokenizer = tokenizer
+            self._model = model
+            self._MODEL_CACHE[self.model_name] = (tokenizer, model)
             self.status = f"transformers:{self.model_name}"
             return True
         except Exception as exc:
             self.status = f"heuristic-fallback:{type(exc).__name__}"
             return False
 
-    def _model_relation(self, premise: str, hypothesis: str) -> Relation | None:
-        if not self._load():
-            return None
-        try:
-            import torch
-
-            encoded = self._tokenizer(
-                premise,
-                hypothesis,
-                return_tensors="pt",
-                truncation=True,
-                max_length=384,
-            )
-            with torch.no_grad():
-                logits = self._model(**encoded).logits[0]
-            probs = torch.softmax(logits, dim=-1).cpu().numpy()
-            id2label = {
-                int(key): value.lower()
-                for key, value in self._model.config.id2label.items()
-            }
-            best = int(np.argmax(probs))
+    def _decode(self, probs: np.ndarray) -> list[Relation]:
+        id2label = {
+            int(key): value.lower()
+            for key, value in self._model.config.id2label.items()
+        }
+        results: list[Relation] = []
+        for row in probs:
+            best = int(np.argmax(row))
             raw = id2label.get(best, "neutral")
             if "entail" in raw:
                 label = "supports"
             elif "contrad" in raw:
                 label = "contradicts"
+            elif raw.startswith("label_") and len(row) == 3:
+                # Some NLI checkpoints keep generic LABEL_0/1/2 names.
+                # The selected MiniLM NLI checkpoint documents the order as
+                # contradiction, entailment, neutral.
+                label = {0: "contradicts", 1: "supports", 2: "neutral"}.get(best, "neutral")
             else:
                 label = "neutral"
-            return Relation(label=label, confidence=float(probs[best]))
-        except Exception:
+            results.append(Relation(label=label, confidence=float(row[best])))
+        return results
+
+    def _model_relations(self, pairs: list[tuple[str, str]]) -> list[Relation] | None:
+        if not pairs or not self._load():
+            return None
+        try:
+            import torch
+
+            results: list[Relation] = []
+            for start in range(0, len(pairs), self.batch_size):
+                batch = pairs[start : start + self.batch_size]
+                encoded = self._tokenizer(
+                    [left for left, _ in batch],
+                    [right for _, right in batch],
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=384,
+                )
+                with torch.inference_mode():
+                    logits = self._model(**encoded).logits
+                probs = torch.softmax(logits, dim=-1).cpu().numpy()
+                results.extend(self._decode(probs))
+            return results
+        except Exception as exc:
+            self.status = f"heuristic-fallback:{type(exc).__name__}"
             return None
 
     def _heuristic(self, left: str, right: str) -> Relation:
@@ -100,11 +131,21 @@ class NLIEngine:
             return Relation("supports", min(0.94, 0.58 + overlap * 0.32))
         return Relation("neutral", max(0.50, 0.76 - overlap * 0.20))
 
-    def compare(self, left: str, right: str, *, use_model: bool = True) -> Relation:
+    def compare_many(
+        self,
+        pairs: list[tuple[str, str]],
+        *,
+        use_model: bool = True,
+    ) -> list[Relation]:
+        if not pairs:
+            return []
         if use_model:
-            result = self._model_relation(left, right)
-            if result is not None:
-                return result
+            model_results = self._model_relations(pairs)
+            if model_results is not None:
+                return model_results
         if self.status == "not-loaded":
             self.status = "heuristic"
-        return self._heuristic(left, right)
+        return [self._heuristic(left, right) for left, right in pairs]
+
+    def compare(self, left: str, right: str, *, use_model: bool = True) -> Relation:
+        return self.compare_many([(left, right)], use_model=use_model)[0]

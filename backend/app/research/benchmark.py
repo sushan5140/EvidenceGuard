@@ -38,6 +38,8 @@ class RunRecord:
     confidence: float
     conflict_expected: bool
     conflict_detected: bool
+    retrieval_engine: str = ""
+    nli_engine: str = ""
 
 
 def load_controlled_cases() -> list[dict]:
@@ -142,6 +144,8 @@ async def run_controlled_benchmark(
                             confidence=response.confidence,
                             conflict_expected=actual_ratio > 0,
                             conflict_detected=conflict_detected,
+                            retrieval_engine=response.model_status.get("retrieval", ""),
+                            nli_engine=response.model_status.get("nli", ""),
                         )
                     )
 

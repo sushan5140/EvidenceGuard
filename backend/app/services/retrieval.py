@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, ClassVar, Literal
 
 import numpy as np
 
@@ -40,9 +40,12 @@ def _minmax(values: np.ndarray) -> np.ndarray:
 class HybridRetriever:
     """BM25 + semantic retrieval with a TF-IDF fallback.
 
-    Sentence-transformers is loaded lazily. This keeps startup fast and allows
-    EvidenceGuard to run on lower-spec machines without downloading a model.
+    Sentence-transformers is loaded lazily and cached process-wide. The cache is
+    important for research evaluation, where hundreds of isolated query
+    pipelines are created in one process.
     """
+
+    _MODEL_CACHE: ClassVar[dict[str, Any]] = {}
 
     def __init__(
         self,
@@ -94,22 +97,36 @@ class HybridRetriever:
                 scores.append(overlap / math.sqrt(len(tokens)))
             return np.asarray(scores, dtype=float)
 
+    def _load_embedding_model(self):
+        if self._embedding_model is not None:
+            return self._embedding_model
+        cached = self._MODEL_CACHE.get(self.embedding_model_name)
+        if cached is not None:
+            self._embedding_model = cached
+            self.engine_status = f"sentence-transformers:{self.embedding_model_name}:cached"
+            return cached
+
+        from sentence_transformers import SentenceTransformer
+
+        model = SentenceTransformer(self.embedding_model_name)
+        self._MODEL_CACHE[self.embedding_model_name] = model
+        self._embedding_model = model
+        self.engine_status = f"sentence-transformers:{self.embedding_model_name}"
+        return model
+
     def _dense(self, question: str, chunks: list[Chunk]) -> np.ndarray:
         if not chunks:
             return np.array([], dtype=float)
 
         if self.enable_local_models:
             try:
-                if self._embedding_model is None:
-                    from sentence_transformers import SentenceTransformer
-
-                    self._embedding_model = SentenceTransformer(self.embedding_model_name)
-                    self.engine_status = f"sentence-transformers:{self.embedding_model_name}"
+                model = self._load_embedding_model()
                 texts = [question, *[chunk.text for chunk in chunks]]
-                vectors = self._embedding_model.encode(
+                vectors = model.encode(
                     texts,
                     normalize_embeddings=True,
                     show_progress_bar=False,
+                    batch_size=min(64, max(8, len(texts))),
                 )
                 q = np.asarray(vectors[0], dtype=float)
                 matrix = np.asarray(vectors[1:], dtype=float)
@@ -143,15 +160,18 @@ class HybridRetriever:
             return []
 
         bm25 = _minmax(self._bm25(question, chunks))
-        dense = _minmax(self._dense(question, chunks))
 
+        # Basic RAG is intentionally BM25-only and should not load the dense model.
         if strategy == "bm25":
             combined = bm25
-            self.engine_status = f"bm25|{self.engine_status}"
-        elif strategy == "dense":
-            combined = dense
+            self.engine_status = "bm25"
+            dense = np.zeros_like(bm25)
         else:
-            combined = self.bm25_weight * bm25 + self.dense_weight * dense
+            dense = _minmax(self._dense(question, chunks))
+            if strategy == "dense":
+                combined = dense
+            else:
+                combined = self.bm25_weight * bm25 + self.dense_weight * dense
 
         order = np.argsort(combined)[::-1][:top_k]
         return [

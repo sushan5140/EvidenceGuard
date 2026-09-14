@@ -37,6 +37,8 @@ class RAMDocsRun:
     confidence: float
     conflict_expected: bool
     conflict_detected: bool
+    retrieval_engine: str = ""
+    nli_engine: str = ""
 
 
 def load_ramdocs(path: str | Path, *, limit: int | None = None) -> list[RAMDocsCase]:
@@ -152,6 +154,8 @@ async def run_ramdocs(
                             edge.relation == "contradicts"
                             for edge in response.graph
                         ),
+                        retrieval_engine=response.model_status.get("retrieval", ""),
+                        nli_engine=response.model_status.get("nli", ""),
                     )
                 )
 

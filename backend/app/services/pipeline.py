@@ -89,7 +89,9 @@ class EvidenceGuardPipeline:
         return list(unique.values())[:12]
 
     def _graph(self, claims: list[dict], *, use_nli: bool) -> list[ConflictEdge]:
-        edges: list[ConflictEdge] = []
+        candidates: list[tuple[dict, dict]] = []
+        pairs: list[tuple[str, str]] = []
+
         for i, left in enumerate(claims):
             for right in claims[i + 1 :]:
                 if left["document_id"] == right["document_id"]:
@@ -98,20 +100,19 @@ class EvidenceGuardPipeline:
                 reverse_overlap = _question_overlap(right["claim"], left["claim"])
                 if max(overlap, reverse_overlap) < 0.18:
                     continue
-                relation = self.nli.compare(
-                    left["claim"],
-                    right["claim"],
-                    use_model=use_nli,
-                )
-                edges.append(
-                    ConflictEdge(
-                        source=left["id"],
-                        target=right["id"],
-                        relation=relation.label,
-                        confidence=round(relation.confidence, 4),
-                    )
-                )
-        return edges
+                candidates.append((left, right))
+                pairs.append((left["claim"], right["claim"]))
+
+        relations = self.nli.compare_many(pairs, use_model=use_nli)
+        return [
+            ConflictEdge(
+                source=left["id"],
+                target=right["id"],
+                relation=relation.label,
+                confidence=round(relation.confidence, 4),
+            )
+            for (left, right), relation in zip(candidates, relations)
+        ]
 
     async def query(
         self,
