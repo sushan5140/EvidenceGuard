@@ -46,7 +46,7 @@ def load_controlled_cases() -> list[dict]:
 
 def _documents_for_case(case: dict, ratio: float) -> list[DocumentCreate]:
     ratio = max(0.0, min(0.9, ratio))
-    total = 10
+    total = 20
     conflict_count = int(round(total * ratio))
     clean_count = total - conflict_count
 
