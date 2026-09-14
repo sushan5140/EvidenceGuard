@@ -7,6 +7,7 @@ on:
       - "backend/app/services/retrieval.py"
       - "backend/app/services/nli.py"
       - "backend/app/services/pipeline.py"
+      - "backend/app/services/scoring.py"
       - "backend/app/research/ramdocs.py"
       - "backend/app/research/benchmark.py"
       - "backend/app/research/tuning.py"

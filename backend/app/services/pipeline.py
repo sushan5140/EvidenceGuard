@@ -14,6 +14,7 @@ from app.services.scoring import (
     answer_confidence,
     conflict_rate,
     evidence_score,
+    select_consensus_evidence,
 )
 from app.services.store import DocumentStore
 
@@ -185,6 +186,18 @@ class EvidenceGuardPipeline:
         abstention_enabled = mode == "evidenceguard"
         abstained = (confidence < threshold or not evidence) if abstention_enabled else not evidence
 
+        generation_evidence = evidence
+        selection_status = "top-score"
+        if mode == "evidenceguard" and evidence:
+            generation_evidence = select_consensus_evidence(
+                evidence,
+                graph,
+                max_items=3,
+            )
+            selection_status = (
+                f"consensus-pruned:{len(generation_evidence)}/{len(evidence)}"
+            )
+
         if abstained:
             answer = (
                 "EvidenceGuard abstained: the retrieved evidence is too weak or "
@@ -194,7 +207,7 @@ class EvidenceGuardPipeline:
         else:
             generated = await self.generator.generate(
                 question,
-                evidence,
+                generation_evidence,
                 conflict=c_rate,
             )
             answer = generated.text
@@ -218,6 +231,7 @@ class EvidenceGuardPipeline:
                     if self.generator.configured
                     else "extractive-fallback"
                 ),
+                "selection": selection_status,
                 "research_mode": mode,
             },
         )
