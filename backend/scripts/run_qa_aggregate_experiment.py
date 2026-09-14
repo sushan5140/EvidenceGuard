@@ -77,9 +77,9 @@ async def main() -> None:
     )
     parser.add_argument("--ramdocs", required=True)
     parser.add_argument("--frozen-config", required=True)
-    parser.add_argument("--output", default="../research/results/qa_aggregate_quick")
+    parser.add_argument("--output", default="../research/results/qa_verifier_full")
     parser.add_argument("--qa-model", default="deepset/minilm-uncased-squad2")
-    parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument("--limit", type=int, default=500)
     args = parser.parse_args()
 
     output = Path(args.output).resolve()
@@ -165,7 +165,7 @@ async def main() -> None:
     baseline_metrics = metrics(runs, prefix="baseline")
     qa_metrics = metrics(runs, prefix="qa")
     summary = {
-        "experiment": "qa_verifier_paired_quick",
+        "experiment": "qa_verifier_paired_full",
         "qa_model": args.qa_model,
         "samples": len(runs),
         "baseline_conflict_aware": baseline_metrics,
@@ -200,8 +200,8 @@ async def main() -> None:
         encoding="utf-8",
     )
     (output / "RESULTS.md").write_text(
-        "## QA verifier paired quick check\n\n"
-        "First 100 RAMDocs cases; conflict-aware and corroboration-filtered QA answers share "
+        "## QA verifier paired full evaluation\n\n"
+        "All 500 RAMDocs cases; conflict-aware and corroboration-filtered QA answers share "
         "the exact same retrieval/NLI/evidence response before answer assembly.\n\n"
         "~~~json\n"
         + json.dumps(summary, indent=2)

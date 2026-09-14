@@ -1,8 +1,8 @@
-name: QA Verifier Paired Quick Check
+name: QA Verifier Paired Full Evaluation
 
 on:
   push:
-    branches: ["experiment/qa-verifier-quick"]
+    branches: ["experiment/qa-verifier-full"]
     paths:
       - "backend/scripts/run_qa_aggregate_experiment.py"
       - "backend/app/research/qa_aggregate.py"
@@ -15,7 +15,7 @@ permissions:
 jobs:
   paired-quick-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       TOKENIZERS_PARALLELISM: "false"
       EVIDENCEGUARD_ENABLE_LOCAL_MODELS: "true"
@@ -46,16 +46,16 @@ jobs:
           curl --fail --location             https://raw.githubusercontent.com/HanNight/RAMDocs/main/RAMDocs_test.jsonl             --output RAMDocs_test.jsonl
           test -s RAMDocs_test.jsonl
 
-      - name: Run paired 100-case quick check
+      - name: Run paired 500-case evaluation
         working-directory: backend
         env:
           PYTHONPATH: .
         run: |
           pytest -q tests/test_qa_aggregate.py
-          python scripts/run_qa_aggregate_experiment.py             --ramdocs ../RAMDocs_test.jsonl             --frozen-config ../research/results/frozen/frozen_config.json             --limit 100             --output ../research/results/qa_aggregate_quick
+          python scripts/run_qa_aggregate_experiment.py             --ramdocs ../RAMDocs_test.jsonl             --frozen-config ../research/results/frozen/frozen_config.json             --limit 500             --output ../research/results/qa_verifier_full
 
       - name: Upload paired quick-check results
         uses: actions/upload-artifact@v4
         with:
-          name: qa-verifier-quick-${{ github.sha }}
-          path: research/results/qa_aggregate_quick
+          name: qa-verifier-full-${{ github.sha }}
+          path: research/results/qa_verifier_full
