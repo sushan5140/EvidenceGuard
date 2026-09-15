@@ -121,7 +121,7 @@ Paired outcomes: 18 strict improvements, 40 strict regressions, 48 wrong answers
 
 Decision: reject the hard corroboration rule as the final answer policy. It provides a genuine safety signal but removes too many legitimate low-frequency answers.
 
-### answer-hypothesis verification — next experiment
+### answer-hypothesis verification — rejected at 100-case gate
 
 Planned branch: `experiment/hypothesis-verifier`.
 
@@ -147,6 +147,23 @@ The paired 500-case corroboration verifier reduced wrong-answer rate by 1.8 perc
 The rule removed 48 baseline wrong answers but introduced 39 new wrong-answer cases and produced 40 strict regressions versus 18 strict improvements.
 
 Decision: retain corroboration as a feature for a softer candidate-level verifier, not as a hard acceptance rule.
+
+## Finding 8 — candidate-level hypothesis scoring still fails when it replaces the baseline answer
+
+The `experiment/hypothesis-verifier` branch froze its feature weights before RAMDocs and tuned only the secondary acceptance threshold on a 12-case synthetic ambiguity/misinformation suite. The synthetic suite selected a threshold of 0.60.
+
+The paired first-100 RAMDocs gate then produced:
+
+| Metric | Conflict-aware | Hypothesis verifier | Delta |
+|---|---:|---:|---:|
+| Strict accuracy | 45.0% | 34.0% | -11.0 pp |
+| All-gold hit rate | 57.0% | 57.0% | 0.0 pp |
+| Any-gold hit rate | 57.0% | 57.0% | 0.0 pp |
+| Wrong-answer rate | 33.0% | 40.0% | +7.0 pp |
+
+Paired outcomes: 10 strict improvements, 21 strict regressions, 14 wrong answers avoided, and 21 new wrong answers introduced.
+
+Decision: reject before the 500-case stage. Candidate verification scores did not separate valid and invalid replacement answers strongly enough. The next experiment will preserve the conflict-aware baseline answer and use QA only for conservative secondary-answer augmentation.
 
 ## Reporting rules
 
