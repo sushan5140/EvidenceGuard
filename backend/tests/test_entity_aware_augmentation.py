@@ -54,7 +54,9 @@ def test_same_entity_candidate_is_blocked():
 
 def test_distinct_entity_candidate_can_be_appended():
     evidence = [
-        ev("b1", "base", 0.95, "Alex Morgan the athlete was born in 1989."),
+        ev("b1", "base1", 0.95, "Alex Morgan the athlete was born in 1989."),
+        ev("b2", "base2", 0.90, "The athlete Alex Morgan played international soccer."),
+        ev("b3", "base3", 0.85, "Alex Morgan won major honors as a soccer player."),
         ev("x1", "other", 0.70, "Alex Morgan the visual artist was born in 1974."),
     ]
     result = augment_with_distinct_entities(
