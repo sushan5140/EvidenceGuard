@@ -1,0 +1,78 @@
+name: Baseline-Preserving Augmentation Gate
+
+on:
+  push:
+    branches: ["experiment/baseline-augmentation"]
+    paths:
+      - "backend/app/research/qa_aggregate.py"
+      - "backend/app/research/hypothesis_verifier.py"
+      - "backend/app/research/baseline_augmentation.py"
+      - "backend/app/research/datasets/hypothesis_validation.json"
+      - "backend/scripts/run_baseline_augmentation.py"
+      - "backend/tests/test_baseline_augmentation.py"
+      - ".github/workflows/baseline-augmentation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paired-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TOKENIZERS_PARALLELISM: "false"
+      EVIDENCEGUARD_ENABLE_LOCAL_MODELS: "true"
+      EVIDENCEGUARD_EMBEDDING_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
+      EVIDENCEGUARD_NLI_MODEL: "cross-encoder/nli-MiniLM2-L6-H768"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: evidenceguard-hf-baseline-augmentation-v1
+
+      - name: Install evaluation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.2"
+          grep -v '^torch' backend/requirements.txt > /tmp/requirements-no-torch.txt
+          pip install -r /tmp/requirements-no-torch.txt
+
+      - name: Fetch official RAMDocs test set
+        run: |
+          curl --fail --location \
+            https://raw.githubusercontent.com/HanNight/RAMDocs/main/RAMDocs_test.jsonl \
+            --output RAMDocs_test.jsonl
+          test -s RAMDocs_test.jsonl
+
+      - name: Run unit tests
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: |
+          pytest -q tests/test_qa_aggregate.py tests/test_hypothesis_verifier.py tests/test_baseline_augmentation.py
+
+      - name: Calibrate on synthetic suite and run paired 100-case gate
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: |
+          python scripts/run_baseline_augmentation.py \
+            --ramdocs ../RAMDocs_test.jsonl \
+            --frozen-config ../research/results/frozen/frozen_config.json \
+            --synthetic app/research/datasets/hypothesis_validation.json \
+            --ramdocs-limit 100 \
+            --output ../research/results/baseline_augmentation_gate
+
+      - name: Upload gate results
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-augmentation-gate-${{ github.sha }}
+          path: research/results/baseline_augmentation_gate

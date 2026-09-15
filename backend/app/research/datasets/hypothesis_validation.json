@@ -1,0 +1,300 @@
+[
+  {
+    "id": "capital_single",
+    "question": "What is the capital of Australia?",
+    "documents": [
+      {
+        "text": "Canberra is the capital city of Australia and the seat of the federal government.",
+        "source_reliability": 0.85
+      },
+      {
+        "text": "Australia is a country in Oceania. Sydney is its largest city by population.",
+        "source_reliability": 0.75
+      },
+      {
+        "text": "A travel blog incorrectly claims that Sydney is the capital of Australia.",
+        "source_reliability": 0.45
+      }
+    ],
+    "gold_answers": [
+      "Canberra"
+    ],
+    "wrong_answers": [
+      "Sydney"
+    ]
+  },
+  {
+    "id": "python_creator",
+    "question": "Who created the Python programming language?",
+    "documents": [
+      {
+        "text": "Python was created by Guido van Rossum, who began work on it in the late 1980s.",
+        "source_reliability": 0.9
+      },
+      {
+        "text": "The Python Software Foundation documents Guido van Rossum as Python's creator.",
+        "source_reliability": 0.9
+      },
+      {
+        "text": "An unreliable forum post says James Gosling created Python.",
+        "source_reliability": 0.35
+      }
+    ],
+    "gold_answers": [
+      "Guido van Rossum"
+    ],
+    "wrong_answers": [
+      "James Gosling"
+    ]
+  },
+  {
+    "id": "mercury_ambiguous",
+    "question": "What is the symbol for Mercury?",
+    "documents": [
+      {
+        "text": "For the chemical element mercury, the chemical symbol is Hg.",
+        "source_reliability": 0.85
+      },
+      {
+        "text": "Astronomy reference tables commonly use the planetary symbol Mercury-sign for the planet Mercury.",
+        "source_reliability": 0.85
+      },
+      {
+        "text": "A mistaken note gives Fe as the chemical symbol for mercury.",
+        "source_reliability": 0.3
+      }
+    ],
+    "gold_answers": [
+      "Hg",
+      "Mercury-sign"
+    ],
+    "wrong_answers": [
+      "Fe"
+    ]
+  },
+  {
+    "id": "blue_bird_ambiguous",
+    "question": "When was The Blue Bird released?",
+    "documents": [
+      {
+        "text": "The Blue Bird, a silent fantasy film directed by Maurice Tourneur, was released in 1918.",
+        "source_reliability": 0.82
+      },
+      {
+        "text": "The Blue Bird, the Shirley Temple fantasy film, was released in 1940.",
+        "source_reliability": 0.82
+      },
+      {
+        "text": "A catalog error lists The Blue Bird as released in 1932.",
+        "source_reliability": 0.35
+      }
+    ],
+    "gold_answers": [
+      "1918",
+      "1940"
+    ],
+    "wrong_answers": [
+      "1932"
+    ]
+  },
+  {
+    "id": "springfield_ambiguous",
+    "question": "What population is reported for Springfield?",
+    "documents": [
+      {
+        "text": "In this census summary, Springfield, Alpha County has a reported population of 31,200.",
+        "source_reliability": 0.8
+      },
+      {
+        "text": "A separate Springfield in Beta County has a reported population of 58,900.",
+        "source_reliability": 0.8
+      },
+      {
+        "text": "A copied social-media graphic wrongly reports Springfield's population as 92,000.",
+        "source_reliability": 0.3
+      }
+    ],
+    "gold_answers": [
+      "31,200",
+      "58,900"
+    ],
+    "wrong_answers": [
+      "92,000"
+    ]
+  },
+  {
+    "id": "apollo_date",
+    "question": "When did Apollo 11 land on the Moon?",
+    "documents": [
+      {
+        "text": "Apollo 11's lunar module landed on the Moon on July 20, 1969.",
+        "source_reliability": 0.9
+      },
+      {
+        "text": "NASA chronology records the Apollo 11 lunar landing as July 20, 1969.",
+        "source_reliability": 0.95
+      },
+      {
+        "text": "A misleading post states that Apollo 11 landed on July 20, 1970.",
+        "source_reliability": 0.3
+      }
+    ],
+    "gold_answers": [
+      "July 20, 1969"
+    ],
+    "wrong_answers": [
+      "July 20, 1970"
+    ]
+  },
+  {
+    "id": "shared_name_birth",
+    "question": "When was Alex Morgan born?",
+    "documents": [
+      {
+        "text": "Alex Morgan, the American soccer player, was born on July 2, 1989.",
+        "source_reliability": 0.85
+      },
+      {
+        "text": "Alex Morgan, the British visual artist profiled by the gallery, was born in 1974.",
+        "source_reliability": 0.78
+      },
+      {
+        "text": "An unsourced fan page says Alex Morgan was born in 1992.",
+        "source_reliability": 0.25
+      }
+    ],
+    "gold_answers": [
+      "July 2, 1989",
+      "1974"
+    ],
+    "wrong_answers": [
+      "1992"
+    ]
+  },
+  {
+    "id": "inventor_single_source_legit",
+    "question": "Who invented the fictional Aurora Lens in the archive?",
+    "documents": [
+      {
+        "text": "The archive credits engineer Mina Rao with inventing the fictional Aurora Lens prototype.",
+        "source_reliability": 0.9
+      },
+      {
+        "text": "The Aurora Lens archive contains photographs of the prototype but does not name another inventor.",
+        "source_reliability": 0.7
+      },
+      {
+        "text": "A rumor attributes the Aurora Lens to Leo Grant, but the archive provides no support for that claim.",
+        "source_reliability": 0.4
+      }
+    ],
+    "gold_answers": [
+      "Mina Rao"
+    ],
+    "wrong_answers": [
+      "Leo Grant"
+    ]
+  },
+  {
+    "id": "two_valid_one_false",
+    "question": "What year did the work titled Sunrise open?",
+    "documents": [
+      {
+        "text": "The stage work Sunrise by L. Hart opened in 2001.",
+        "source_reliability": 0.82
+      },
+      {
+        "text": "Another work titled Sunrise, a gallery installation by M. Chen, opened in 2012.",
+        "source_reliability": 0.82
+      },
+      {
+        "text": "A blog confuses the dates and says Sunrise opened in 2007.",
+        "source_reliability": 0.35
+      },
+      {
+        "text": "The gallery catalog independently confirms that M. Chen's Sunrise opened in 2012.",
+        "source_reliability": 0.88
+      }
+    ],
+    "gold_answers": [
+      "2001",
+      "2012"
+    ],
+    "wrong_answers": [
+      "2007"
+    ]
+  },
+  {
+    "id": "numeric_misinfo",
+    "question": "How many chambers does the human heart have?",
+    "documents": [
+      {
+        "text": "The human heart has four chambers: two atria and two ventricles.",
+        "source_reliability": 0.9
+      },
+      {
+        "text": "Standard anatomy references describe the human heart as having four chambers.",
+        "source_reliability": 0.9
+      },
+      {
+        "text": "A misleading worksheet says the human heart has three chambers.",
+        "source_reliability": 0.25
+      }
+    ],
+    "gold_answers": [
+      "four"
+    ],
+    "wrong_answers": [
+      "three"
+    ]
+  },
+  {
+    "id": "mars_name",
+    "question": "Which planet is known as the Red Planet?",
+    "documents": [
+      {
+        "text": "Mars is commonly known as the Red Planet because iron minerals in its soil oxidize.",
+        "source_reliability": 0.9
+      },
+      {
+        "text": "Planetary science references identify Mars as the Red Planet.",
+        "source_reliability": 0.88
+      },
+      {
+        "text": "A false trivia card calls Venus the Red Planet.",
+        "source_reliability": 0.25
+      }
+    ],
+    "gold_answers": [
+      "Mars"
+    ],
+    "wrong_answers": [
+      "Venus"
+    ]
+  },
+  {
+    "id": "same_title_authors",
+    "question": "Who wrote the book titled The Crossing?",
+    "documents": [
+      {
+        "text": "The novel The Crossing by Cormac McCarthy was published in 1994.",
+        "source_reliability": 0.85
+      },
+      {
+        "text": "A different book titled The Crossing was written by Samar Yazbek.",
+        "source_reliability": 0.8
+      },
+      {
+        "text": "An erroneous listing attributes The Crossing to Ernest Hemingway.",
+        "source_reliability": 0.3
+      }
+    ],
+    "gold_answers": [
+      "Cormac McCarthy",
+      "Samar Yazbek"
+    ],
+    "wrong_answers": [
+      "Ernest Hemingway"
+    ]
+  }
+]
