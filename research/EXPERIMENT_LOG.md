@@ -94,17 +94,59 @@ Branch: `experiment/all-pair-nli`. Draft PR closed after the full RAMDocs experi
 
 Branches: `experiment/qa-aggregation` and `experiment/qa-aggregation-quick`. See Finding 5.
 
-### ambiguity-preserving answer clusters — running
+### ambiguity-preserving answer clusters — rejected
 
-Branch: `experiment/ambiguity-clusters`. Draft PR #2.
+Branch: `experiment/ambiguity-clusters`. Draft PR #2 closed after the full 500-case model-backed run.
 
-Hypothesis: group strongly supporting claims into answer clusters, rank clusters by accumulated evidence mass, and emit one representative per strongest cluster. This preserves multiple legitimate ambiguous answers without automatically treating every contradiction as false or blindly aggregating every document-level QA span.
+The cluster selector preserved multiple support groups, but compared with canonical `conflict_aware` it reduced strict accuracy from 14.8% to 14.0% and increased known wrong-answer rate from 19.6% to 21.6%.
 
-Acceptance criteria:
+Decision: reject. Support clustering alone does not distinguish legitimate ambiguity from misinformation reliably enough.
 
-- improve strict and/or all-gold accuracy over canonical `conflict_aware`,
-- avoid a material increase in known wrong-answer rate,
-- keep the selector label-free at inference time.
+### corroboration-filtered QA verifier — rejected as final policy
+
+Branches: `experiment/qa-verifier-quick` and `experiment/qa-verifier-full`.
+
+The frozen rule retained a single candidate freely, but when multiple QA candidates were proposed it required each surviving candidate to be independently extracted from at least two source documents; otherwise it fell back to the strongest single candidate.
+
+On the paired 500-case run:
+
+| Metric | Conflict-aware | Corroboration verifier | Delta |
+|---|---:|---:|---:|
+| Strict accuracy | 14.8% | 10.4% | -4.4 pp |
+| All-gold hit rate | 17.8% | 11.6% | -6.2 pp |
+| Any-gold hit rate | 68.8% | 61.2% | -7.6 pp |
+| Wrong-answer rate | 19.6% | 17.8% | -1.8 pp |
+
+Paired outcomes: 18 strict improvements, 40 strict regressions, 48 wrong answers avoided, and 39 new wrong answers introduced.
+
+Decision: reject the hard corroboration rule as the final answer policy. It provides a genuine safety signal but removes too many legitimate low-frequency answers.
+
+### answer-hypothesis verification — next experiment
+
+Planned branch: `experiment/hypothesis-verifier`.
+
+Hypothesis: score each extracted answer candidate independently using candidate-specific evidence support, contradiction pressure, source reliability, retrieval quality, and evidence diversity. Secondary answers should survive when their own evidence is strong rather than being accepted or rejected solely by a global document-count rule.
+
+Protocol:
+
+- tune any candidate-verification thresholds only on a synthetic ambiguity validation suite,
+- freeze the policy before RAMDocs evaluation,
+- run a paired 100-case RAMDocs gate first,
+- proceed to the paired 500-case run only if the 100-case gate does not materially worsen wrong-answer rate or strict correctness.
+
+## Finding 6 — ambiguity support clusters do not solve answer validity
+
+The full model-backed `ambiguity_rag` run reached 14.0% strict accuracy and 21.6% wrong-answer rate versus 14.8% and 19.6% for canonical `conflict_aware`.
+
+Decision: reject the ambiguity-cluster selector. Preserving support groups is necessary for ambiguous questions, but support mass alone is not a sufficient verifier.
+
+## Finding 7 — hard corroboration trades too much recall for safety
+
+The paired 500-case corroboration verifier reduced wrong-answer rate by 1.8 percentage points, from 19.6% to 17.8%, but strict accuracy fell by 4.4 points, from 14.8% to 10.4%.
+
+The rule removed 48 baseline wrong answers but introduced 39 new wrong-answer cases and produced 40 strict regressions versus 18 strict improvements.
+
+Decision: retain corroboration as a feature for a softer candidate-level verifier, not as a hard acceptance rule.
 
 ## Reporting rules
 
