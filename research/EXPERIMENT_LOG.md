@@ -165,6 +165,23 @@ Paired outcomes: 10 strict improvements, 21 strict regressions, 14 wrong answers
 
 Decision: reject before the 500-case stage. Candidate verification scores did not separate valid and invalid replacement answers strongly enough. The next experiment will preserve the conflict-aware baseline answer and use QA only for conservative secondary-answer augmentation.
 
+## Finding 9 — baseline-preserving augmentation recovers missing answers but also imports misinformation
+
+The `experiment/baseline-augmentation` branch preserved the exact conflict-aware baseline answer and allowed QA only to append secondary candidates above a synthetic-calibrated threshold.
+
+On the paired first-100 RAMDocs gate:
+
+| Metric | Conflict-aware | Augmented | Delta |
+|---|---:|---:|---:|
+| Strict accuracy | 45.0% | 37.0% | -8.0 pp |
+| All-gold hit rate | 57.0% | 74.0% | +17.0 pp |
+| Any-gold hit rate | 57.0% | 74.0% | +17.0 pp |
+| Wrong-answer rate | 33.0% | 51.0% | +18.0 pp |
+
+Paired outcomes: 7 strict improvements, 15 strict regressions, 17 all-gold improvements, and 18 newly introduced wrong-answer cases.
+
+Decision: reject before the 500-case stage. Candidate generation is demonstrably recovering many missing valid answers, but the current hand-designed verifier cannot distinguish legitimate secondary answers from misinformation reliably enough. The next experiment will learn candidate-validity weights on external development data while keeping RAMDocs evaluation-only.
+
 ## Reporting rules
 
 - RAMDocs labels remain evaluation-only and must never enter retrieval, NLI, evidence scoring, answer aggregation, or abstention decisions.
