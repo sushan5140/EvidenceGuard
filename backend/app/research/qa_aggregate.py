@@ -281,17 +281,15 @@ class ExtractiveQAAggregator:
 
         return predictions
 
-    def answer(
+    def extract_candidates(
         self,
         question: str,
         evidence: list[EvidenceItem],
-    ) -> AggregatedAnswer:
+    ) -> list[AggregatedCandidate]:
+        """Return raw aggregated QA candidates before any acceptance policy."""
+
         if not evidence:
-            return AggregatedAnswer(
-                text="I do not have enough retrieved evidence to answer this question.",
-                candidates=[],
-                engine="qa-empty",
-            )
+            return []
 
         # Keep only the highest-scored evidence item for each source document.
         best_by_document: dict[str, EvidenceItem] = {}
@@ -311,11 +309,26 @@ class ExtractiveQAAggregator:
         )[: self.max_evidence]
 
         predictions = self._predict(question, selected)
-        candidates = aggregate_predictions(
+        return aggregate_predictions(
             predictions,
             max_candidates=self.max_candidates,
         )
-        candidates = apply_corroboration_policy(candidates)
+
+    def answer(
+        self,
+        question: str,
+        evidence: list[EvidenceItem],
+    ) -> AggregatedAnswer:
+        if not evidence:
+            return AggregatedAnswer(
+                text="I do not have enough retrieved evidence to answer this question.",
+                candidates=[],
+                engine="qa-empty",
+            )
+
+        candidates = apply_corroboration_policy(
+            self.extract_candidates(question, evidence)
+        )
         if not candidates:
             return AggregatedAnswer(
                 text="I do not have a sufficiently supported extractive answer.",
