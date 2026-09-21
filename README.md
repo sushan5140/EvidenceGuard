@@ -8,6 +8,14 @@ EvidenceGuard is a final-year AI/Computer Science research prototype built aroun
 
 Instead of merging retrieved text into one prompt, EvidenceGuard retrieves evidence, extracts claims, detects support/contradiction relationships, scores evidence quality, estimates uncertainty, and can **abstain** when the evidence is too weak or conflicted.
 
+## September 22, 2026 — submission build
+
+The project is frozen on canonical **V2** research behavior. The submission sprint completes document upload/deletion, strengthens API smoke testing, preserves existing injected evidence during adversarial experiments, and fixes Docker volume persistence. Rejected experimental QA/entity-augmentation PRs are deliberately not merged.
+
+**Start here:** [run the demo and inspect reproducibility](submission/RUN_AND_REPRODUCE.md) · [3–5 minute demo script](submission/DEMO_SCRIPT.md) · [frozen benchmark snapshot](submission/RESULTS_SNAPSHOT.md) · [release checklist](submission/RELEASE_CHECKLIST.md).
+
+The report PDF, editable report and presentation are delivered as separate submission-package artifacts. This repository contains the application source, research methodology, raw evaluation CSVs and experiment decisions.
+
 ## V2 status
 
 V2 adds a reproducible research layer on top of the working application:
@@ -69,7 +77,7 @@ Answer             Abstain
 - transformer NLI + heuristic fallback
 - support/contradiction evidence graph
 - source-reliability and agreement scoring
-- contradiction-pruned consensus answer selection
+- contradiction-pruned consensus answer selection **as a negative side ablation**
 - confidence estimation + abstention
 - optional OpenAI-compatible grounded generation
 - PDF/text ingestion
@@ -88,6 +96,8 @@ Answer             Abstain
 git clone https://github.com/sushan5140/EvidenceGuard.git
 cd EvidenceGuard
 cp .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
+# The template runs a CPU-friendly fallback demo by default; see submission/RUN_AND_REPRODUCE.md.
 
 python -m venv .venv
 # Windows:
@@ -218,6 +228,12 @@ EvidenceScore =
 ```
 
 These are the currently frozen engineering weights selected by the repository's validation protocol, **not universal research conclusions**. Any future retuning must use validation data only and remain frozen for held-out evaluation.
+
+## Submission interpretation
+
+The local default demo uses fallback retrieval/NLI and must not be described as reproducing the archived neural test. The 500-case RAMDocs model-backed evaluation uses frozen neural settings and an extractive generator; see [the exact benchmark snapshot](submission/RESULTS_SNAPSHOT.md). At the validation-calibrated threshold, EvidenceGuard did **not** reduce wrong-answer rate compared with the forced conflict-aware parent on RAMDocs. This negative result is documented rather than hidden.
+
+The dashboard answer badge means the system **answered**, not that the answer was independently verified as true. Its confidence is an internal score, not a probability of factual correctness.
 
 ## Research documentation
 

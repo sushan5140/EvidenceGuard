@@ -5,6 +5,9 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      # Override the host-relative .env path so persistence uses the mounted volume.
+      EVIDENCEGUARD_DATA_PATH: /app/data/documents.json
     volumes:
       - evidenceguard_data:/app/data
 

@@ -84,7 +84,7 @@ Paired outcomes: 10 strict improvements, 21 strict regressions, 11 wrong answers
 
 Decision: reject direct independent-document QA aggregation as a final answer strategy. It recovers more possible answers, but without a verifier it amplifies misinformation faster than it improves strict correctness.
 
-## Active experiments
+## Completed exploratory experiments
 
 ### all-pair NLI conflict discovery — rejected
 
@@ -123,16 +123,7 @@ Decision: reject the hard corroboration rule as the final answer policy. It prov
 
 ### answer-hypothesis verification — rejected at 100-case gate
 
-Planned branch: `experiment/hypothesis-verifier`.
-
-Hypothesis: score each extracted answer candidate independently using candidate-specific evidence support, contradiction pressure, source reliability, retrieval quality, and evidence diversity. Secondary answers should survive when their own evidence is strong rather than being accepted or rejected solely by a global document-count rule.
-
-Protocol:
-
-- tune any candidate-verification thresholds only on a synthetic ambiguity validation suite,
-- freeze the policy before RAMDocs evaluation,
-- run a paired 100-case RAMDocs gate first,
-- proceed to the paired 500-case run only if the 100-case gate does not materially worsen wrong-answer rate or strict correctness.
+Branch: `experiment/hypothesis-verifier`. Draft PR #3 closed. See Finding 8 below.
 
 ## Finding 6 — ambiguity support clusters do not solve answer validity
 
@@ -181,6 +172,14 @@ On the paired first-100 RAMDocs gate:
 Paired outcomes: 7 strict improvements, 15 strict regressions, 17 all-gold improvements, and 18 newly introduced wrong-answer cases.
 
 Decision: reject before the 500-case stage. Candidate generation is demonstrably recovering many missing valid answers, but the current hand-designed verifier cannot distinguish legitimate secondary answers from misinformation reliably enough. The next experiment will learn candidate-validity weights on external development data while keeping RAMDocs evaluation-only.
+
+## Finding 10 — external entity disambiguation was safe but added no measurable value
+
+The `experiment/entity-aware-augmentation` branch learned a same-entity classifier only from AmbigDocs development data. Its calibration reached 83.0% precision and 91.7% recall for same-entity pairs on the separate AmbigDocs-dev calibration slice. These are pair-classification diagnostics, not answer-quality metrics.
+
+On the predeclared paired first-100 RAMDocs gate, conflict-aware and entity-aware outputs were identical in the reported answer metrics: 45.0% strict accuracy, 57.0% all-gold hit rate, and 33.0% wrong-answer rate. The entity-aware policy appended a mean of just 0.02 answers per case, with zero strict/all-gold improvements and zero new wrong-answer cases.
+
+Decision: reject before full-500 promotion, close draft PR #5 without merging, and freeze canonical main for the September 22 academic submission. The experiment is retained as future-work evidence, not as a successful result.
 
 ## Reporting rules
 

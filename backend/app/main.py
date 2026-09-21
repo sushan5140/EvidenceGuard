@@ -160,7 +160,9 @@ async def attack_experiment(request: ExperimentRequest) -> ExperimentResponse:
             mode=request.mode,
         )
     finally:
-        store.clear_injected()
+        # Remove only this experiment's documents; preserve preexisting injections.
+        for document_id in ids:
+            store.delete(document_id)
 
     return ExperimentResponse(
         baseline=baseline,
