@@ -185,6 +185,9 @@ export default function Home() {
     text: "",
     reliability: 0.7,
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadReliability, setUploadReliability] = useState(0.7);
+  const [uploadKey, setUploadKey] = useState(0);
 
   const conflictMode = mode === "conflict_aware" || mode === "consensus_rag" || mode === "evidenceguard";
 
@@ -204,6 +207,8 @@ export default function Home() {
     try {
       await api.loadDemo();
       await refresh();
+      setResult(null);
+      setAttackResult(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load demo");
     } finally {
@@ -218,6 +223,7 @@ export default function Home() {
     try {
       const data = await api.query(question, useNli, mode);
       setResult(data);
+      setAttackResult(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
@@ -262,8 +268,45 @@ export default function Home() {
       });
       setNewSource({ title: "", text: "", reliability: 0.7 });
       await refresh();
+      setResult(null);
+      setAttackResult(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add source");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const uploadSource = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!selectedFile) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api.uploadDocument(selectedFile, uploadReliability);
+      setSelectedFile(null);
+      setUploadKey((current) => current + 1);
+      await refresh();
+      setResult(null);
+      setAttackResult(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload source");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeSource = async (doc: DocumentRecord) => {
+    if (!window.confirm(`Remove "${doc.title}" from the indexed corpus?`)) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api.deleteDocument(doc.id);
+      await refresh();
+      setResult(null);
+      setAttackResult(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete source");
     } finally {
       setBusy(false);
     }
@@ -304,7 +347,7 @@ export default function Home() {
         </aside>
       </section>
 
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       <section className="workspace">
         <div className="main-column">
@@ -318,7 +361,7 @@ export default function Home() {
                   disabled={!conflictMode}
                   onChange={(e) => setUseNli(e.target.checked)}
                 />
-                <span /> NLI model
+                <span /> NLI comparisons
               </label>
             </div>
             <div className="mode-row">
@@ -361,12 +404,12 @@ export default function Home() {
                     <h2>{result.abstained ? "Abstained" : "Answer"}</h2>
                   </div>
                   <span className={result.abstained ? "decision abstain" : "decision answer"}>
-                    {result.abstained ? "INSUFFICIENT" : "SUPPORTED"}
+                    {result.abstained ? "INSUFFICIENT" : "ANSWERED"}
                   </span>
                 </div>
                 <p className="answer-text">{result.answer}</p>
                 <div className="metrics">
-                  <Metric label="confidence" value={pct(result.confidence)} hint="system confidence" />
+                  <Metric label="confidence" value={pct(result.confidence)} hint="internal score, not truth probability" />
                   <Metric label="conflict rate" value={pct(result.conflict_rate)} hint="meaningful graph edges" />
                   <Metric label="evidence" value={String(result.evidence.length)} hint="atomic claims ranked" />
                   <Metric label="mode" value={result.mode.replaceAll("_", " ")} hint="ablation configuration" />
@@ -462,6 +505,33 @@ export default function Home() {
             </label>
             <button className="secondary" disabled={busy}>Index source</button>
           </form>
+          <div className="upload-divider"><span>OR UPLOAD A DOCUMENT</span></div>
+          <form className="source-form" onSubmit={uploadSource}>
+            <label className="file-field">
+              PDF, TXT or Markdown document
+              <input
+                key={uploadKey}
+                type="file"
+                accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+                onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+            {selectedFile && <small className="file-name">Selected: {selectedFile.name}</small>}
+            <label>
+              Uploaded source reliability <b>{pct(uploadReliability)}</b>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={uploadReliability}
+                onChange={(event) => setUploadReliability(Number(event.target.value))}
+              />
+            </label>
+            <button className="secondary" disabled={busy || !selectedFile}>
+              {busy ? "Working…" : "Upload and index source"}
+            </button>
+          </form>
         </section>
       </section>
 
@@ -496,6 +566,15 @@ export default function Home() {
               <div><h4>{doc.title}</h4><span>{pct(doc.source_reliability)}</span></div>
               <p>{doc.text.slice(0, 155)}{doc.text.length > 155 ? "…" : ""}</p>
               <small>{doc.tags.join(" · ") || "untagged"}</small>
+              <button
+                type="button"
+                className="delete-source"
+                disabled={busy}
+                onClick={() => removeSource(doc)}
+                aria-label={`Remove ${doc.title}`}
+              >
+                Remove source
+              </button>
             </article>
           ))}
         </div>
