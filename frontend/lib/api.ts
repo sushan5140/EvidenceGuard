@@ -10,17 +10,28 @@ import type {
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers || {}),
-    },
-  });
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request failed: ${response.status}`);
+  const headers = new Headers(init?.headers);
+  // A multipart upload needs the browser to supply its boundary.
+  if (!(init?.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
   }
+  const response = await fetch(`${API}${path}`, { ...init, headers });
+
+  if (!response.ok) {
+    const body = await response.text();
+    let message = body || `Request failed: ${response.status}`;
+    try {
+      const parsed = JSON.parse(body);
+      if (typeof parsed.detail === "string") message = parsed.detail;
+      else if (Array.isArray(parsed.detail)) {
+        message = parsed.detail.map((item: { msg?: string }) => item.msg || "Invalid input").join("; ");
+      }
+    } catch {
+      // Keep the original response body if it is not JSON.
+    }
+    throw new Error(message);
+  }
+
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
@@ -42,6 +53,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  uploadDocument: (file: File, reliability: number) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<DocumentRecord>(
+      `/api/documents/file?source_reliability=${encodeURIComponent(reliability)}`,
+      { method: "POST", body: form },
+    );
+  },
+  deleteDocument: (id: string) =>
+    request<void>(`/api/documents/${encodeURIComponent(id)}`, { method: "DELETE" }),
   query: (question: string, useNli = true, mode: ResearchMode = "evidenceguard") =>
     request<QueryResponse>("/api/query", {
       method: "POST",
