@@ -249,3 +249,29 @@ footer b { color: var(--ink); }
   .sources-panel { margin-left: 16px; margin-right: 16px; }
   .benchmark-meta { flex-direction: column; }
 }
+
+/* Submission demo: complete document lifecycle controls */
+.upload-divider {
+  display: flex; align-items: center; gap: 12px; margin: 22px 0 16px;
+  color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .11em;
+}
+.upload-divider::before, .upload-divider::after {
+  content: ""; height: 1px; flex: 1; background: var(--line);
+}
+.file-field { display: grid; gap: 8px; }
+.file-field input[type="file"] { font-size: 12px; padding: 11px; }
+.file-field input[type="file"]::file-selector-button {
+  border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px;
+  background: var(--green-soft); color: var(--green); font-weight: 750;
+  margin-right: 12px; cursor: pointer;
+}
+.file-name { color: var(--green); overflow-wrap: anywhere; font-size: 12px; }
+.delete-source {
+  display: inline-flex; align-items: center; border: 1px solid #e4bfb5;
+  background: var(--rust-soft); color: var(--rust); font-weight: 700;
+  font-size: 11px; border-radius: 8px; padding: 7px 10px; margin-top: 14px;
+}
+.delete-source:hover { background: #f1d9d2; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--green); outline-offset: 3px;
+}
